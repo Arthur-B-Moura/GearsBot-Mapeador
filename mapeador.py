@@ -29,7 +29,7 @@ controle_direct = MoveSteering(OUTPUT_A, OUTPUT_B) # Movimento com curva
 alto_falante = Sound()
 
 # Constantes e valores importantes
-ANGULO_GIRO_LIDAR = 90
+ANGULO_GIRO_LIDAR = 45
 QTD_MEDIDAS_LIDAR = int(360/ANGULO_GIRO_LIDAR)
 
 TAMANHO_GRID_CM = 50
@@ -71,19 +71,16 @@ def Obtem_Distancias():
 
 
 # def Atualiza_Mapa_Hit(delta_pos, coord, distancias, mapa_hit):
-# TODO: Ajustar arredondamento de valores para tamanho do mapa
-# TODO: desenhar paredes nos QTD_MEDIDAS_LIDAR pontos 
+# TODO: conferir e aprimorar coordenadas das paredes
+# TODO: marcar 0s e 3s
 def Atualiza_Mapa_Hit(delta_pos, distancias):
     y = []
     x = []
     
     for i in range(QTD_MEDIDAS_LIDAR):
         # Obtem angulo em graus e converte para radianos
-        ang_deg = 90-(ANGULO_GIRO_LIDAR*i)
-        ang_rad = math.radians(ang_deg)
-        
-        # print("sin = ", math.sin(ang_rad))
-        # print("ang = ", ang_deg)
+        ang_deg = 90-(ANGULO_GIRO_LIDAR*i) # Graus
+        ang_rad = math.radians(ang_deg)    # Radianos
         
         y_ = ((distancias[i]*(math.sin(ang_rad)))+delta_pos[1])
         x_ = ((distancias[i]*(math.cos(ang_rad)))+delta_pos[0])
@@ -100,19 +97,29 @@ def Atualiza_Mapa_Hit(delta_pos, distancias):
 
     # Tamanho da grid de acordo com leitura
     # +1 para considerar o espaco em que o robo esta
-    x_size = int(maiores[0]+abs(menores[0]))+1
-    y_size = int(maiores[1]+abs(menores[1]))+1
+    # +1 para considerar as paredes
+    x_size = int(maiores[0]+abs(menores[0]))+1+2
+    y_size = int(maiores[1]+abs(menores[1]))+1+2
     
-    # print(f"x_size = {x_size}")
-    # print(f"y_size = {y_size}")
+    print(f"x_size = {x_size}")
+    print(f"y_size = {y_size}")
 
-    mapa_hit = [[0 for _ in range(x_size)]for _ in range(y_size)]
-     
-    # print("pos x =", x_size-maiores[0]-1)
-    # print("pos y =", maiores[1])
+    # Cria matriz de acordo com tamanho
+    mapa_hit = [[0 for _ in range(x_size)]for _ in range(y_size)] 
     
     # Marca posicao do robo na grid
-    mapa_hit[maiores[1]][x_size-maiores[0]-1] = 1
+    x_robo = maiores[1]+1
+    y_robo = x_size-maiores[0]-2
+    mapa_hit[x_robo][y_robo] = 2
+    
+    # Marca paredes
+    for val in zip(x,y):
+        
+        x1 = x_robo+val[0]+1   if val[0] > 0 else x_robo if val[0] == 0 else x_robo+val[0]+1
+        y1 = (val[1]-y_robo)+3 if val[1] > 0 else y_robo if val[1] == 0 else (y_robo-val[1])+1
+        
+        print(x1, y1)
+        mapa_hit[x1][y1] = 1
     
     return mapa_hit
 
