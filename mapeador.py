@@ -48,6 +48,10 @@ touch_sensor_in4 = TouchSensor(INPUT_4)
 # Fim do codigo não editado #
 #############################
 
+class Mapa:
+    matriz = [[],[]]
+    las_pos = []
+
 
 # Mapeia QTD_MEDIDAS_LIDAR pontos de distancia
 def Obtem_Distancias():
@@ -67,24 +71,48 @@ def Obtem_Distancias():
 
 
 # def Atualiza_Mapa_Hit(delta_pos, coord, distancias, mapa_hit):
+# TODO: Ajustar arredondamento de valores para tamanho do mapa
+# TODO: desenhar paredes nos QTD_MEDIDAS_LIDAR pontos 
 def Atualiza_Mapa_Hit(delta_pos, distancias):
     y = []
     x = []
     
     for i in range(QTD_MEDIDAS_LIDAR):
-        # Calcula modulos x e y para os vetores de distancia obtidos
-        y.append((distancias[i]*(math.sin(90-(ANGULO_GIRO_LIDAR*i)))+delta_pos[1]))
-        x.append((distancias[i]*(math.cos(90-(ANGULO_GIRO_LIDAR*i)))+delta_pos[0])) 
+        # Obtem angulo em graus e converte para radianos
+        ang_deg = 90-(ANGULO_GIRO_LIDAR*i)
+        ang_rad = math.radians(ang_deg)
         
+        # print("sin = ", math.sin(ang_rad))
+        # print("ang = ", ang_deg)
+        
+        y_ = ((distancias[i]*(math.sin(ang_rad)))+delta_pos[1])
+        x_ = ((distancias[i]*(math.cos(ang_rad)))+delta_pos[0])
+        
+        # Calcula modulos x e y para os vetores de distancia obtidos
+        y.append(round(y_/TAMANHO_GRID_CM))
+        x.append(round(x_/TAMANHO_GRID_CM)) 
+        
+    # print("y = ", y)
+    # print("x = ", x)
 
     maiores = [max(x),max(y)] # Posicoes limite Norte e Leste
     menores = [min(x),min(y)] # Posições limite   Sul e Oeste
 
-    x_size = int(2+((maiores[0]+abs(menores[0]))/TAMANHO_GRID_CM))
-    y_size = int(2+((maiores[1]+abs(menores[1]))/TAMANHO_GRID_CM))
+    # Tamanho da grid de acordo com leitura
+    # +1 para considerar o espaco em que o robo esta
+    x_size = int(maiores[0]+abs(menores[0]))+1
+    y_size = int(maiores[1]+abs(menores[1]))+1
+    
+    # print(f"x_size = {x_size}")
+    # print(f"y_size = {y_size}")
 
-    mapa_hit = [[0 for _ in range(y_size)]for _ in range(x_size)]
-    mapa_hit[x_size-int(2+max(x)/TAMANHO_GRID_CM)][y_size-int(2+max(y)/TAMANHO_GRID_CM)] = 1
+    mapa_hit = [[0 for _ in range(x_size)]for _ in range(y_size)]
+     
+    # print("pos x =", x_size-maiores[0]-1)
+    # print("pos y =", maiores[1])
+    
+    # Marca posicao do robo na grid
+    mapa_hit[maiores[1]][x_size-maiores[0]-1] = 1
     
     return mapa_hit
 
@@ -95,6 +123,7 @@ print("="*50+"\n\n")
 # Loop principal
 while True:
     delta_pos_atual = [sensor_gps.x-P_INICIAL[0], sensor_gps.y-P_INICIAL[1]]
+    print("posicao =", delta_pos_atual)
     
     medidas = Obtem_Distancias()
     print(medidas)
@@ -104,7 +133,3 @@ while True:
     
     for line in mapa_1:
         print(line)
-    
-    
-    
-        
