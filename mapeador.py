@@ -36,6 +36,7 @@ TAMANHO_GRID_CM = 50
 
 P_INICIAL = [sensor_gps.x, sensor_gps.y]
 
+VELOCIDADE_GIRO_LIDAR = 40
 
 ######################
 # Codigo não editado #
@@ -54,9 +55,12 @@ class Mapa:
 
 
 # Mapeia QTD_MEDIDAS_LIDAR pontos de distancia
-def Obtem_Distancias():
+def Obtem_Distancias(giro_robo):
     # TODO: ajustar angulo de inicio a partir do valor do giroscopio
     distancias = []
+    
+    # Ajusta posicao do lidar
+    motor_lidar.on_to_position(speed=VELOCIDADE_GIRO_LIDAR,position=(-giro_robo))
     
     # Para todos os angulos dentro da resolucao
     for i in range(QTD_MEDIDAS_LIDAR): 
@@ -64,9 +68,9 @@ def Obtem_Distancias():
         distancias.append(medida) # Salva valor lido no array
         
         # Move o sensor lidar de acordo com o angulo dado    
-        motor_lidar.run_to_rel_pos(position_sp=ANGULO_GIRO_LIDAR,speed_sp=50)
-        time.sleep(3)
-    
+        motor_lidar.on_to_position(position=ANGULO_GIRO_LIDAR*(i+1),speed=VELOCIDADE_GIRO_LIDAR)
+        time.sleep(1)
+        
     return distancias
 
 
@@ -130,9 +134,12 @@ print("="*50+"\n\n")
 # Loop principal
 while True:
     delta_pos_atual = [sensor_gps.x-P_INICIAL[0], sensor_gps.y-P_INICIAL[1]]
-    print("posicao =", delta_pos_atual)
+    angulo          = sensor_giro.angle # Obtem angulo atual
     
-    medidas = Obtem_Distancias()
+    print("posicao =", delta_pos_atual)
+    print("angulo  =", angulo)
+    
+    medidas = Obtem_Distancias(angulo)
     print(medidas)
     print("\n")
     
