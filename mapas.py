@@ -55,30 +55,106 @@ class Mapa:
     tam = []
 
     def __init__(self) -> None:
-        self.matriz = [0]
+        self.matriz = [[0],[0]]
         self.center = [0,0]
         self.tam    = [0,0,0,0]
 
     def __str__(self) -> str:
-        return self.matriz
-    
-    def atualiza(self, mapa_opc, map_type):
-        new_m = Mapa()
+        str = ""
+        for line in self.matriz:
+            str += f"{line}" + "\n"
 
+        return str
+    
+    def atualiza(self, mapa_opc, map_type: str) -> None:
+        new_m = Mapa()
         new_m.tam = [max(n) for n in zip(self.tam, mapa_opc.tam)] # Tamanho da matriz resultante
     
-#       centro_x = size_x - Leste - 1
-#       centro_y = size_y - Norte 
-        size_x = len(new_m.matriz[0])
-        size_y =  len(new_m.matriz)
-        
+        size_x = new_m.tam[POS_LESTE]+new_m.tam[POS_OESTE] + 1
+        size_y = new_m.tam[POS_NORTE]+new_m.tam[POS_SUL]   + 1
+
+        new_m.matriz = [[0 for _ in range(size_x)] for _ in range(size_y)]
+
+        # print("Self =")
+        # print(self)
+
         new_m.center[POS_X] = size_x - new_m.tam[POS_LESTE] - 1
         new_m.center[POS_Y] = size_y - new_m.tam[POS_NORTE] - 1
 
-        # for i in range(size_y):
-        #     for j in range(size_x):
-        #         new_m.matriz[i][j] = self.matriz[i][j] + 1 if mapa_opc.matriz[i][j] == 1
+        # Diferenças de tamanho da matriz self entre a matriz resultante
+        d_tam = [new_m.tam[i]-self.tam[i] for i in range(len(self.tam))]
+        if d_tam[POS_OESTE] > 0: d_tam[POS_OESTE] += 1
 
-hits = Mapa()
-att1 = Mapa()
-att2 = Mapa()
+        # Diferenças de tamanho da matriz opc entre a matriz resultante
+        d_tam_opc = [new_m.tam[i]-mapa_opc.tam[i] for i in range(len(mapa_opc.tam))]
+        if d_tam_opc[POS_OESTE] > 0: d_tam_opc[POS_OESTE] += 1
+
+
+        # print(f"d_tam = {d_tam}")
+        # print(f"size_y = {size_y}")
+        # print(f"size_x = {size_x}")
+
+        # Valores na matriz resultante
+        for i in range(size_y):
+            for j in range(size_x):
+
+                i_opc = i - d_tam_opc[POS_NORTE] 
+                j_opc = j - d_tam_opc[POS_OESTE]
+                
+                if i_opc in range(size_y-d_tam_opc[POS_SUL]) and j_opc in range(size_x-d_tam_opc[POS_LESTE]): 
+                   val = 1 if (map_type == "hit" and mapa_opc.matriz[i_opc][j_opc] == 1) or (map_type == "miss" and mapa_opc.matriz[i_opc][j_opc] == 0) else 0
+                else: val = 0
+                
+                i_old = i - d_tam[POS_NORTE] 
+                j_old = j - d_tam[POS_OESTE] 
+
+                # print(f"i_old = {i_old}")
+                # print(f"j_old = {j_old}")
+
+                if i_old in range(size_y-d_tam[POS_SUL]) and j_old in range(size_x-d_tam[POS_LESTE]): 
+                    new_m.matriz[i][j] = self.matriz[i_old][j_old] + val 
+                else: new_m.matriz[i][j] = val 
+                
+        
+        # Atualiza valores da matriz inicial
+        self.matriz = new_m.matriz
+        self.center = new_m.center
+        self.tam    = new_m.tam
+                
+
+# hits = Mapa()
+# att1 = Mapa()
+# att2 = Mapa()
+
+# att1.matriz = [[0,1,0,0],[0,1,0,0],[1,0,0,1]]
+# att1.center = [1,2]
+# att1.tam    = [1,1,1,2]
+
+# att2.matriz = [[1,0,1,0],[0,1,1,0],[1,0,1,0],[5,2,0,1]]
+# att2.center = [1,2]
+# att2.tam    = [1,2,1,2]
+
+
+# print("-"*20+"\n")
+# print("\tHITS:")
+# print(hits)
+# print("-"*20+"\n")
+
+
+# print("\tATT1:")
+# print(att1)
+# print("-"*20+"\n")
+
+# hits.atualiza(att1,"hit")
+# print("\tHITS:")
+# print(hits)
+# print("-"*20+"\n")
+
+# print("\tATT2:")
+# print(att2)
+# print("-"*20+"\n")
+
+# hits.atualiza(att2,"hit")
+# print("\tHITS:")
+# print(hits)
+# print("-"*20+"\n")
