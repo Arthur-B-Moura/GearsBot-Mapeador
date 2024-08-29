@@ -1,13 +1,15 @@
 # Código Lucas
 
-from collections import deque
+# Returns a new deque object initialized left-to-right (using append()) with data from iterable. If iterable is not specified, the new deque is empty.
+# Forma de manipular arrays de maneira rápida. Melhor descrição em: https://docs.python.org/3/library/collections.html#collections.deque
+from collections import deque 
 import numpy as np
 
 def wavefront(mapa, origem_x, origem_y, destino_x, destino_y):
-    linhas, colunas = len(mapa), len(mapa[0])
-    distancia = np.full((linhas, colunas), np.inf)
-    distancia[destino_x][destino_y] = 0
-    fila = deque([(destino_x, destino_y)])
+    linhas, colunas = len(mapa), len(mapa[0]) # Numero de linhas/colunas
+    distancia = np.full((linhas, colunas), np.inf) # Preenche uma matriz [linhas][colunas] com valor inf
+    distancia[destino_x][destino_y] = 0 # Define o ponto de destino com distância 0
+    fila = deque([(destino_x, destino_y)]) # Cria uma lista do tipo deque
     
     # Direções: cima, baixo, esquerda, direita
     direcoes = [(-1, 0), (1, 0), (0, -1), (0, 1)]
