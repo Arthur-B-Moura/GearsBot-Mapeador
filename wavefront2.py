@@ -23,9 +23,6 @@ def waveFront(mapa, destino_x, destino_y):
         if distancia[nx][ny] > distancia[x][y] + 1:
           distancia[nx][ny] = distancia[x][y] + 1  # Substitui o valor de uma coordenada pelo seu sucessor caso a distância das casas seja menor que a atual
           fila.append((nx, ny)) # Acrescenta ao final o novo par de coordenadas
-  for line in distancia:
-      print(line)
-  print(" ")
 
 mapa = [[0 for _ in range(colunas)] for _ in range(linhas)]
 
