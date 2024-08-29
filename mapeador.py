@@ -3,6 +3,7 @@
 # Import the necessary libraries
 import time
 import math
+from mapas import Mapa
 
 from ev3dev2.motor import *       # MoveTank(), MoveSteering(), LargeMotor()
 from ev3dev2.sensor.lego import * # GyroSensor(), LaserRangeSensor(), GPSSensor()
@@ -29,14 +30,16 @@ controle_direct = MoveSteering(OUTPUT_A, OUTPUT_B) # Movimento com curva
 alto_falante = Sound()
 
 # Constantes e valores importantes
-ANGULO_GIRO_LIDAR = 45
-QTD_MEDIDAS_LIDAR = int(360/ANGULO_GIRO_LIDAR)
+ANGULO_GIRO_LIDAR = 90
+VELOCIDADE_GIRO_LIDAR = 40
 
 TAMANHO_GRID_CM = 50
 
+QTD_MEDIDAS_LIDAR = int(360/ANGULO_GIRO_LIDAR)
 P_INICIAL = [sensor_gps.x, sensor_gps.y]
 
-VELOCIDADE_GIRO_LIDAR = 40
+POS_X = 0
+POS_Y = 1
 
 ######################
 # Codigo não editado #
@@ -48,10 +51,6 @@ touch_sensor_in4 = TouchSensor(INPUT_4)
 #############################
 # Fim do codigo não editado #
 #############################
-
-class Mapa:
-    matriz = [[],[]]
-    las_pos = []
 
 
 # Mapeia QTD_MEDIDAS_LIDAR pontos de distancia
@@ -74,10 +73,7 @@ def Obtem_Distancias(giro_robo):
     return distancias
 
 
-# def Atualiza_Mapa_Hit(delta_pos, coord, distancias, mapa_hit):
-# TODO: conferir e aprimorar coordenadas das paredes
-# TODO: marcar 0s e 3s
-def Atualiza_Mapa_Hit(delta_pos, distancias):
+def Distancias_Para_Coordenada(distancias, delta_pos):
     y = []
     x = []
     
@@ -92,16 +88,31 @@ def Atualiza_Mapa_Hit(delta_pos, distancias):
         # Calcula modulos x e y para os vetores de distancia obtidos
         y.append(round(y_/TAMANHO_GRID_CM))
         x.append(round(x_/TAMANHO_GRID_CM)) 
-        
+    
+    dist = [x,y]
+    return dist
+
+
+# def Atualiza_Mapa_Hit(delta_pos, coord, distancias, mapa_hit):
+# TODO: conferir e aprimorar coordenadas das paredes
+# TODO: marcar -1 para desconhecido
+def Cria_Mapa_Distancias(delta_pos, raw_values):
+    
+    dist = Distancias_Para_Coordenada(raw_values, delta_pos)
+    
+    x = dist[POS_X]
+    y = dist[POS_Y]
+
     # print("y = ", y)
     # print("x = ", x)
 
     maiores = [max(x),max(y)] # Posicoes limite Norte e Leste
     menores = [min(x),min(y)] # Posições limite   Sul e Oeste
 
+    print("Maiores = ", maiores)
     # Tamanho da grid de acordo com leitura
     # +1 para considerar o espaco em que o robo esta
-    # +1 para considerar as paredes
+    # +2 para considerar as paredes
     x_size = int(maiores[0]+abs(menores[0]))+1+2
     y_size = int(maiores[1]+abs(menores[1]))+1+2
     
@@ -130,20 +141,24 @@ def Atualiza_Mapa_Hit(delta_pos, distancias):
 
 print("="*50+"\n\n")
 
+# Inicializa mapas de hit e miss
+hits = Mapa()
+miss = Mapa()
+
 
 # Loop principal
 while True:
     delta_pos_atual = [sensor_gps.x-P_INICIAL[0], sensor_gps.y-P_INICIAL[1]]
     angulo          = sensor_giro.angle # Obtem angulo atual
     
-    print("posicao =", delta_pos_atual)
-    print("angulo  =", angulo)
+    # print("posicao =", delta_pos_atual)
+    # print("angulo  =", angulo)
     
     medidas = Obtem_Distancias(angulo)
-    print(medidas)
-    print("\n")
+    # print(medidas)
+    # print("\n")
     
-    mapa_1 = Atualiza_Mapa_Hit(delta_pos_atual, medidas)
+    mapa_1 = Cria_Mapa_Distancias(delta_pos_atual, medidas)
     
     for line in mapa_1:
         print(line)
