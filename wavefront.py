@@ -20,10 +20,12 @@ def wavefront(mapa, origem_x, origem_y, destino_x, destino_y):
     
     # Propagação da onda
     while fila:
+        #Se uma vizinha é válida (dentro dos limites e não é um obstáculo) e a nova distância calculada é menor, 
+        # a distância é atualizada e a célula é adicionada à fila.
         x, y = fila.popleft()
         for dx, dy in direcoes:
             nx, ny = x + dx, y + dy
-            if 0 <= nx < linhas and 0 <= ny < colunas and mapa[nx][ny] != 1:
+            if 0 <= nx < linhas and 0 <= ny < colunas and mapa[nx][ny] != 1: 
                 if distancia[nx][ny] > distancia[x][y] + 1:
                     distancia[nx][ny] = distancia[x][y] + 1
                     fila.append((nx, ny))
@@ -34,7 +36,8 @@ def wavefront(mapa, origem_x, origem_y, destino_x, destino_y):
     # Encontrar o caminho
     caminho = []
     x, y = origem_x, origem_y
-    while (x, y) != (destino_x, destino_y):
+    while (x, y) != (destino_x, destino_y): # O caminho é reconstruído a partir da origem até o destino, seguindo as células vizinhas com menor distância.
+        
         caminho.append((x, y))
         for dx, dy in direcoes:
             nx, ny = x + dx, y + dy
