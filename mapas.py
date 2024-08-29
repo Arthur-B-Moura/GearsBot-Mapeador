@@ -1,160 +1,164 @@
+#!/usr/bin/env python3
+
+# Import the necessary libraries
+import time
 import math
+from mapas import Mapa
 
-#   0 0 0 0 0   : Mapa  ->  5 x 4 (x,y) 
-#   0 0 0 0 0   : Centro(x,y)  -> (1,2)
-#   0 2 0 0 0   : Tamanho (N,S,L,O)
-#   0 0 0 0 0             (2,1,3,1)
-# 
-# Portanto...:::: Norte = size_y - centro_y
-#               :   Sul = size_y - Norte - 1
-#               : Leste = size_x - centro_x -1
-#               : Oeste = size_x - Leste - 1
-#               ================================
-#              centro_x = size_x - Leste - 1
-#              centro_y = size_y - Norte 
+from ev3dev2.motor import *       # MoveTank(), MoveSteering(), LargeMotor()
+from ev3dev2.sensor.lego import * # GyroSensor(), LaserRangeSensor(), GPSSensor()
+from ev3dev2.sound import Sound
 
-###################################################
+from ev3dev2.sensor import *
+from ev3dev2.sensor.virtual import *
 
-# --- self.matriz ---
+# Define motores de acordo com os atuadores de saída
+motor_esquerdo = LargeMotor(OUTPUT_A) # Motor da roda esquerda
+motor_direito  = LargeMotor(OUTPUT_B) # Motor da roda direita
+motor_lidar    = LargeMotor(OUTPUT_C) # Motor que gira o lidar
+
+# Define sensores de localizacao geoespacial
+sensor_giro  = GyroSensor(INPUT_6)       # Sensor giroscopio
+sensor_lidar = LaserRangeSensor(INPUT_7) # Sensor lidar (distancia)
+sensor_gps   = GPSSensor(INPUT_8)        # Sensor GPS
+
+# Modulos/Funcoes basicas de movimento do tanque
+controle_tanque = MoveTank(OUTPUT_A, OUTPUT_B)     # Movimento retilineo
+controle_direct = MoveSteering(OUTPUT_A, OUTPUT_B) # Movimento com curva
+
 #
-#      [0][1][2][3]
-# [0]   0  0  1  0  : Centro (x,y) = (2,1)
-# [1]   1  0  0  1  :    Tam (N,S,L,O)
-# [2]   0  0  1  0           (1,1,1,2)
-#
-# --- opc.matriz ---
-#
-#      [0][1][2][3]
-# [0]   0  1  0  0  : Centro (x,y) = (2,1)
-# [1]   1  0  0  1  :    Tam (N,S,L,O)
-# [2]   0  0  0  0           (1,3,1,2)
-# [3]   0  0  0  0
-# [4]   0  1  0  0
-#
-# --- resultante.matriz --- (HIT)
-#
-#      [0][1][2][3]  : Centro (x,y) = (2,1)
-# [0]   0  1  1  0
-# [1]   2  0  0  2
-# [2]   0  0  1  0
-# [3]   0  0  0  0
-# [4]   0  1  0  0
-#
+alto_falante = Sound()
+
+# Constantes e valores importantes
+ANGULO_GIRO_LIDAR = 90
+VELOCIDADE_GIRO_LIDAR = 40
+
+TAMANHO_GRID_CM = 50
+
+QTD_MEDIDAS_LIDAR = int(360/ANGULO_GIRO_LIDAR)
+P_INICIAL = [sensor_gps.x, sensor_gps.y]
 
 POS_X = 0
 POS_Y = 1
 
-POS_NORTE = 0
-POS_SUL   = 1
-POS_LESTE = 2
-POS_OESTE = 3
+######################
+# Codigo não editado #
+######################
+touch_sensor_in1 = TouchSensor(INPUT_1)
+touch_sensor_in2 = TouchSensor(INPUT_2)
+touch_sensor_in3 = TouchSensor(INPUT_3)
+touch_sensor_in4 = TouchSensor(INPUT_4)
+#############################
+# Fim do codigo não editado #
+#############################
 
-class Mapa:
-    matriz = [[],[]]
-    center = []
-    tam = []
 
-    def __init__(self) -> None:
-        self.matriz = [[0],[0]]
-        self.center = [0,0]
-        self.tam    = [0,0,0,0]
-
-    def __str__(self) -> str:
-        str = ""
-        for line in self.matriz:
-            str += f"{line}" + "\n"
-
-        return str
+# Mapeia QTD_MEDIDAS_LIDAR pontos de distancia
+def Obtem_Distancias(giro_robo):
+    # TODO: ajustar angulo de inicio a partir do valor do giroscopio
+    distancias = []
     
-    def atualiza(self, mapa_opc, map_type: str) -> None:
-        new_m = Mapa()
-        new_m.tam = [max(n) for n in zip(self.tam, mapa_opc.tam)] # Tamanho da matriz resultante
+    # Ajusta posicao do lidar
+    motor_lidar.on_to_position(speed=VELOCIDADE_GIRO_LIDAR,position=(-giro_robo))
     
-        size_x = new_m.tam[POS_LESTE]+new_m.tam[POS_OESTE] + 1
-        size_y = new_m.tam[POS_NORTE]+new_m.tam[POS_SUL]   + 1
-
-        new_m.matriz = [[0 for _ in range(size_x)] for _ in range(size_y)]
-
-        # print("Self =")
-        # print(self)
-
-        new_m.center[POS_X] = size_x - new_m.tam[POS_LESTE] - 1
-        new_m.center[POS_Y] = size_y - new_m.tam[POS_NORTE] - 1
-
-        # Diferenças de tamanho da matriz self entre a matriz resultante
-        d_tam = [new_m.tam[i]-self.tam[i] for i in range(len(self.tam))]
-        if d_tam[POS_OESTE] > 0: d_tam[POS_OESTE] += 1
-
-        # Diferenças de tamanho da matriz opc entre a matriz resultante
-        d_tam_opc = [new_m.tam[i]-mapa_opc.tam[i] for i in range(len(mapa_opc.tam))]
-        if d_tam_opc[POS_OESTE] > 0: d_tam_opc[POS_OESTE] += 1
-
-
-        # print(f"d_tam = {d_tam}")
-        # print(f"size_y = {size_y}")
-        # print(f"size_x = {size_x}")
-
-        # Valores na matriz resultante
-        for i in range(size_y):
-            for j in range(size_x):
-
-                i_opc = i - d_tam_opc[POS_NORTE] 
-                j_opc = j - d_tam_opc[POS_OESTE]
-                
-                if i_opc in range(size_y-d_tam_opc[POS_SUL]) and j_opc in range(size_x-d_tam_opc[POS_LESTE]): 
-                   val = 1 if (map_type == "hit" and mapa_opc.matriz[i_opc][j_opc] == 1) or (map_type == "miss" and mapa_opc.matriz[i_opc][j_opc] == 0) else 0
-                else: val = 0
-                
-                i_old = i - d_tam[POS_NORTE] 
-                j_old = j - d_tam[POS_OESTE] 
-
-                # print(f"i_old = {i_old}")
-                # print(f"j_old = {j_old}")
-
-                if i_old in range(size_y-d_tam[POS_SUL]) and j_old in range(size_x-d_tam[POS_LESTE]): 
-                    new_m.matriz[i][j] = self.matriz[i_old][j_old] + val 
-                else: new_m.matriz[i][j] = val 
-                
+    # Para todos os angulos dentro da resolucao
+    for i in range(QTD_MEDIDAS_LIDAR): 
+        medida = sensor_lidar.distance_centimeters # Le valor
+        distancias.append(medida) # Salva valor lido no array
         
-        # Atualiza valores da matriz inicial
-        self.matriz = new_m.matriz
-        self.center = new_m.center
-        self.tam    = new_m.tam
-                
-
-# hits = Mapa()
-# att1 = Mapa()
-# att2 = Mapa()
-
-# att1.matriz = [[0,1,0,0],[0,1,0,0],[1,0,0,1]]
-# att1.center = [1,2]
-# att1.tam    = [1,1,1,2]
-
-# att2.matriz = [[1,0,1,0],[0,1,1,0],[1,0,1,0],[5,2,0,1]]
-# att2.center = [1,2]
-# att2.tam    = [1,2,1,2]
+        # Move o sensor lidar de acordo com o angulo dado    
+        motor_lidar.on_to_position(position=ANGULO_GIRO_LIDAR*(i+1),speed=VELOCIDADE_GIRO_LIDAR)
+        time.sleep(1)
+        
+    return distancias
 
 
-# print("-"*20+"\n")
-# print("\tHITS:")
-# print(hits)
-# print("-"*20+"\n")
+def Distancias_Para_Coordenada(distancias, delta_pos):
+    y = []
+    x = []
+    
+    for i in range(QTD_MEDIDAS_LIDAR):
+        # Obtem angulo em graus e converte para radianos
+        ang_deg = 90-(ANGULO_GIRO_LIDAR*i) # Graus
+        ang_rad = math.radians(ang_deg)    # Radianos
+        
+        y_ = ((distancias[i]*(math.sin(ang_rad)))+delta_pos[1])
+        x_ = ((distancias[i]*(math.cos(ang_rad)))+delta_pos[0])
+        
+        # Calcula modulos x e y para os vetores de distancia obtidos
+        y.append(round(y_/TAMANHO_GRID_CM))
+        x.append(round(x_/TAMANHO_GRID_CM)) 
+    
+    dist = [x,y]
+    return dist
 
 
-# print("\tATT1:")
-# print(att1)
-# print("-"*20+"\n")
+# def Atualiza_Mapa_Hit(delta_pos, coord, distancias, mapa_hit):
+# TODO: conferir e aprimorar coordenadas das paredes
+# TODO: marcar -1 para desconhecido
+def Cria_Mapa_Distancias(delta_pos, raw_values):
+    
+    dist = Distancias_Para_Coordenada(raw_values, delta_pos)
+    
+    x = dist[POS_X]
+    y = dist[POS_Y]
 
-# hits.atualiza(att1,"hit")
-# print("\tHITS:")
-# print(hits)
-# print("-"*20+"\n")
+    # print("y = ", y)
+    # print("x = ", x)
 
-# print("\tATT2:")
-# print(att2)
-# print("-"*20+"\n")
+    maiores = [max(x),max(y)] # Posicoes limite Norte e Leste
+    menores = [min(x),min(y)] # Posições limite   Sul e Oeste
 
-# hits.atualiza(att2,"hit")
-# print("\tHITS:")
-# print(hits)
-# print("-"*20+"\n")
+    print("Maiores = ", maiores)
+    # Tamanho da grid de acordo com leitura
+    # +1 para considerar o espaco em que o robo esta
+    # +2 para considerar as paredes
+    x_size = int(maiores[0]+abs(menores[0]))+1+2
+    y_size = int(maiores[1]+abs(menores[1]))+1+2
+    
+    print(f"x_size = {x_size}")
+    print(f"y_size = {y_size}")
+
+    # Cria matriz de acordo com tamanho
+    mapa_hit = [[0 for _ in range(x_size)]for _ in range(y_size)] 
+    
+    # Marca posicao do robo na grid
+    x_robo = maiores[1]+1
+    y_robo = x_size-maiores[0]-2
+    mapa_hit[x_robo][y_robo] = 2
+    
+    # Marca paredes
+    for val in zip(x,y):
+        
+        x1 = x_robo+val[0]+1   if val[0] > 0 else x_robo if val[0] == 0 else x_robo+val[0]+1
+        y1 = (val[1]-y_robo)+3 if val[1] > 0 else y_robo if val[1] == 0 else (y_robo-val[1])+1
+        
+        print(x1, y1)
+        mapa_hit[x1][y1] = 1
+    
+    return mapa_hit
+
+
+print("="*50+"\n\n")
+
+# Inicializa mapas de hit e miss
+hits = Mapa()
+miss = Mapa()
+
+
+# Loop principal
+while True:
+    delta_pos_atual = [sensor_gps.x-P_INICIAL[0], sensor_gps.y-P_INICIAL[1]]
+    angulo          = sensor_giro.angle # Obtem angulo atual
+    
+    # print("posicao =", delta_pos_atual)
+    # print("angulo  =", angulo)
+    
+    medidas = Obtem_Distancias(angulo)
+    # print(medidas)
+    # print("\n")
+    
+    mapa_1 = Cria_Mapa_Distancias(delta_pos_atual, medidas)
+    
+    for line in mapa_1:
+        print(line)
