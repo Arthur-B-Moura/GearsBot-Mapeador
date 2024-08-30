@@ -26,6 +26,19 @@ def waveFront(mapa, destino_x, destino_y):
 
 mapa = [[0 for _ in range(colunas)] for _ in range(linhas)]
 
+mapa[3][0] = -1
+mapa[3][1] = -1
+mapa[3][2] = -1
+mapa[3][3] = -1
+mapa[3][4] = -1
+mapa[3][5] = -1
+mapa[3][6] = -1
+
+mapa[8][7] = -1
+mapa[8][8] = -1
+mapa[9][7] = -1
+mapa[9][8] = -1
+
 waveFront(mapa,0,0)
   
   
