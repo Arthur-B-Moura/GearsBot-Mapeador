@@ -67,17 +67,24 @@ class Mapa:
         return str
     
     def atualiza(self, mapa_opc, map_type: str) -> None:
-        new_m = Mapa()
-        new_m.tam = [max(n) for n in zip(self.tam, mapa_opc.tam)] # Tamanho da matriz resultante
+        new_m = Mapa() # Inicializa mapa resultante
+        
+        # Tamanhos cardinais do mapa resultante
+        new_m.tam = [max(n) for n in zip(self.tam, mapa_opc.tam)] 
     
+        # Marca tamanhos x e y da matriz do mapa resultante
         size_x = new_m.tam[POS_LESTE]+new_m.tam[POS_OESTE] + 1
         size_y = new_m.tam[POS_NORTE]+new_m.tam[POS_SUL]   + 1
 
+        # Inicializa matriz do mapa com 0 para cada posição
         new_m.matriz = [[0 for _ in range(size_x)] for _ in range(size_y)]
 
+        # Obtem coordenadas do centro (posição inicial do robô) para o novo mapa
         new_m.center[POS_X] = size_x - new_m.tam[POS_LESTE] - 1
-        new_m.center[POS_Y] = size_y - new_m.tam[POS_NORTE] - 1
+        new_m.center[POS_Y] = size_y - new_m.tam[POS_NORTE] - 1 # TODO: double check this line later
 
+
+        # Diferenças de tamanho entre as matrizes 
         # Diferenças de tamanho da matriz self entre a matriz resultante
         d_tam = [new_m.tam[i]-self.tam[i] for i in range(len(self.tam))]
         if d_tam[POS_OESTE] > 0: d_tam[POS_OESTE] += 1
@@ -86,6 +93,7 @@ class Mapa:
         d_tam_opc = [new_m.tam[i]-mapa_opc.tam[i] for i in range(len(mapa_opc.tam))]
         if d_tam_opc[POS_OESTE] > 0: d_tam_opc[POS_OESTE] += 1
 
+        
         # Valores na matriz resultante
         for i in range(size_y):
             for j in range(size_x):
