@@ -67,20 +67,24 @@ class Mapa:
         return str
     
     def atualiza(self, mapa_opc, map_type: str) -> None:
-        new_m = Mapa()
-        new_m.tam = [max(n) for n in zip(self.tam, mapa_opc.tam)] # Tamanho da matriz resultante
+        new_m = Mapa() # Inicializa mapa resultante
+        
+        # Tamanhos cardinais do mapa resultante
+        new_m.tam = [max(n) for n in zip(self.tam, mapa_opc.tam)] 
     
+        # Marca tamanhos x e y da matriz do mapa resultante
         size_x = new_m.tam[POS_LESTE]+new_m.tam[POS_OESTE] + 1
         size_y = new_m.tam[POS_NORTE]+new_m.tam[POS_SUL]   + 1
 
+        # Inicializa matriz do mapa com 0 para cada posição
         new_m.matriz = [[0 for _ in range(size_x)] for _ in range(size_y)]
 
-        # print("Self =")
-        # print(self)
-
+        # Obtem coordenadas do centro (posição inicial do robô) para o novo mapa
         new_m.center[POS_X] = size_x - new_m.tam[POS_LESTE] - 1
-        new_m.center[POS_Y] = size_y - new_m.tam[POS_NORTE] - 1
+        new_m.center[POS_Y] = size_y - new_m.tam[POS_NORTE] - 1 # TODO: double check this line later
 
+
+        # Diferenças de tamanho entre as matrizes 
         # Diferenças de tamanho da matriz self entre a matriz resultante
         d_tam = [new_m.tam[i]-self.tam[i] for i in range(len(self.tam))]
         if d_tam[POS_OESTE] > 0: d_tam[POS_OESTE] += 1
@@ -89,11 +93,7 @@ class Mapa:
         d_tam_opc = [new_m.tam[i]-mapa_opc.tam[i] for i in range(len(mapa_opc.tam))]
         if d_tam_opc[POS_OESTE] > 0: d_tam_opc[POS_OESTE] += 1
 
-
-        # print(f"d_tam = {d_tam}")
-        # print(f"size_y = {size_y}")
-        # print(f"size_x = {size_x}")
-
+        
         # Valores na matriz resultante
         for i in range(size_y):
             for j in range(size_x):
@@ -121,40 +121,3 @@ class Mapa:
         self.center = new_m.center
         self.tam    = new_m.tam
                 
-
-# hits = Mapa()
-# att1 = Mapa()
-# att2 = Mapa()
-
-# att1.matriz = [[0,1,0,0],[0,1,0,0],[1,0,0,1]]
-# att1.center = [1,2]
-# att1.tam    = [1,1,1,2]
-
-# att2.matriz = [[1,0,1,0],[0,1,1,0],[1,0,1,0],[5,2,0,1]]
-# att2.center = [1,2]
-# att2.tam    = [1,2,1,2]
-
-
-# print("-"*20+"\n")
-# print("\tHITS:")
-# print(hits)
-# print("-"*20+"\n")
-
-
-# print("\tATT1:")
-# print(att1)
-# print("-"*20+"\n")
-
-# hits.atualiza(att1,"hit")
-# print("\tHITS:")
-# print(hits)
-# print("-"*20+"\n")
-
-# print("\tATT2:")
-# print(att2)
-# print("-"*20+"\n")
-
-# hits.atualiza(att2,"hit")
-# print("\tHITS:")
-# print(hits)
-# print("-"*20+"\n")
