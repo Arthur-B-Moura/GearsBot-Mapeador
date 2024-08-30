@@ -2,7 +2,7 @@ import numpy as np
 from collections import deque
 
 # Propagação da onda
-def waveFront(mapa, destino_x, destino_y):
+def propagaOnda(mapa, destino_x, destino_y):
   linhas, colunas = len(mapa), len(mapa[0])
   distancia = mapa
   for i in range(12):
