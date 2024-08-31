@@ -32,6 +32,7 @@ alto_falante = Sound()
 # Constantes e valores importantes
 ANGULO_GIRO_LIDAR = 15
 VELOCIDADE_GIRO_LIDAR = 10
+LIDAR_SLEEP_TIME = 0.01
 
 TAMANHO_GRID_CM = 50
 
@@ -73,7 +74,7 @@ def Obtem_Distancias(giro_robo):
         
         # Move o sensor lidar de acordo com o angulo dado    
         motor_lidar.on_to_position(position=ANGULO_GIRO_LIDAR*(i+1),speed=VELOCIDADE_GIRO_LIDAR)
-        time.sleep(1)
+        time.sleep(LIDAR_SLEEP_TIME)
         
     return distancias
 
@@ -103,34 +104,59 @@ def Distancias_Para_Coordenada(distancias, delta_pos):
 def Muda_Referencia(vetor, centro):
     coord = [0,0]
     
-    print("centro =", centro)
-    print("vetor = ", vetor)
+    # print("centro =", centro)
+    # print("vetor = ", vetor)
     
     coord[POS_X] = centro[POS_X] + vetor[POS_X]
     coord[POS_Y] = centro[POS_Y] - vetor[POS_Y]
     
-    if coord[POS_X] < centro[POS_X] and coord[POS_X] != 0: coord[POS_X] -= 1
-    if coord[POS_Y] < centro[POS_Y] and coord[POS_Y] != 0: coord[POS_Y] -= 1
-    
     return coord
 
 
+
+# Retorna uma matriz valores[2][QTD_VALORES] que indica as coordenadas [x][y]
+# de cada ponto visto pelo sensor a aprtir das informações do vetor e da parede
+# para qual ele aponta
+def Retorna_Espacos_Conhecidos(vetor, wall, ang_v_rad):
+    lista = [[],[]]
+    
+    x = 1 if vetor[POS_X] < 0 else 0
+    y = 0
+    
+    if vetor[POS_X] == 0:
+        for _ in range(abs(wall[POS_Y])):
+            if vetor[POS_Y] > 0: y += 1
+            if vetor[POS_Y] < 0: y -= 1
+            
+            lista[POS_X].append(x)
+            lista[POS_Y].append(y)
+        return lista
+    
+    
+    while(abs(x)-abs(wall[POS_X]) < 0 and (abs(y)-abs(wall[POS_Y])) < 0):
+        if vetor[POS_X] > 0: x += 1
+        if vetor[POS_X] < 0: x -= 1
+      
+        y = round(math.tan(ang_v_rad) * x)
+        
+        lista[POS_X].append(x)
+        lista[POS_Y].append(y)
+    return lista
+    
+
 # def Atualiza_Mapa_Hit(delta_pos, coord, distancias, mapa_hit):
-# TODO: conferir e aprimorar coordenadas das paredes
-# TODO: marcar -1 para desconhecido
 def Cria_Mapa_Distancias(delta_pos, raw_values):
     
     dist = Distancias_Para_Coordenada(raw_values, delta_pos)
-    mapa = Mapa()
-    
     x = dist[POS_X]
     y = dist[POS_Y]
 
-    # print("y = ", y)
-    # print("x = ", x)
-
     maiores = [max(x),max(y)] # Posicoes limite Leste e Norte
     menores = [min(x),min(y)] # Posições limite Oeste e Sul
+
+
+    # Iniciliza mapa
+    mapa = Mapa()
 
     # Definindo tamanho do mapa (N,S,L,O) de acordo com o padrão da Classe Mapa()
     # +1 e -1 para considerar as paredes em cada direcao
@@ -141,30 +167,22 @@ def Cria_Mapa_Distancias(delta_pos, raw_values):
     y_size = int(mapa.tam[POS_NORTE] + mapa.tam[POS_SUL])+1   # Tamanho vertical   (Norte -> Sul)
     x_size = int(mapa.tam[POS_LESTE] + mapa.tam[POS_OESTE])+1 # Tamanho horizontal (Leste -> Oeste)
     
-    # print(f"x_size = {x_size}")
-    # print(f"y_size = {y_size}")
-
     # Cria matriz de acordo com tamanho
-    mapa_hit    = [[0 for _ in range(x_size)]for _ in range(y_size)] 
-    mapa.matriz = [[0 for _ in range(x_size)]for _ in range(y_size)] 
+    # 8 é usado como valor buffer para representar lugares desconhecidos
+    mapa.matriz = [[8 for _ in range(x_size)]for _ in range(y_size)] 
     
     # Define coordenadas do ponto de referência na matriz
-    mapa.center[POS_X] =  mapa.tam[POS_OESTE] 
-    mapa.center[POS_Y] =  mapa.tam[POS_NORTE] 
+    mapa.center[POS_X] = mapa.tam[POS_OESTE] 
+    mapa.center[POS_Y] = mapa.tam[POS_NORTE] 
     
-    print("Center coord = ", mapa.center)
-    # print("Tam sizes (N S L O) = " ,mapa.tam)
     
-    # ========= TEMP =============
-    x_robo = maiores[1]+1
-    y_robo = x_size-maiores[0]-2
-    # ========= TEMP =============
+    # Coordenadas para pontos conhecidos da matriz do mapa
+    known_xs = [] # Valores x
+    known_ys = [] # Valores y
     
-    # Marca posicao do robo na grid
-    mapa.matriz[mapa.center[POS_Y]][mapa.center[POS_X]] = -2
-    
-    # print("x = ", x)
-    # print("y = ", y)
+    # Coordenadas para pontos das paredes na matriz do mapa
+    walls_xs = [] # Valores x
+    walls_ys = [] # Valores y
     
     
     for i in range(QTD_MEDIDAS_LIDAR):
@@ -172,32 +190,55 @@ def Cria_Mapa_Distancias(delta_pos, raw_values):
         ang_deg = 90-(ANGULO_GIRO_LIDAR*i) # Graus
         ang_rad = math.radians(ang_deg)    # Radianos
         
-        if ang_deg == 90 or ang_deg == -90: 
-            val_x = 0
-        else:
-            val_x = math.ceil(math.cos(ang_rad)) if ang_deg < 180 else math.floor(math.cos(ang_rad))
+
+        if x[i] == 0: val_x = 0
+        if x[i] >  0: val_x = 1
+        if x[i] <  0: val_x = -1
         
-        if ang_deg == 0 or ang_deg == -180: 
-            val_y = 0
-        else:
-            val_y = math.ceil(math.sin(ang_rad)) if ang_deg < 90 and ang_deg > 270 else math.floor(math.sin(ang_rad))
+        if y[i] == 0: val_y = 0
+        if y[i] >  0: val_y = 1
+        if y[i] <  0: val_y = -1
         
-        # print(f"ang_deg = {ang_deg}, val_x = {val_x}")
-        # print(f"ang_deg = {ang_deg}, val_y = {val_y}")
         
-        wall = Muda_Referencia([x[i]+val_x,y[i]+val_y], mapa.center)
+        # def Retorna_Espacos_Conhecidos(vetor, wall, ang_v_rad, ang_v_deg):
+        wall_x = x[i]+val_x
+        wall_y = y[i]+val_y
         
-        print(f"wall = ", wall)
+        # walls.append(Muda_Referencia([wall_x,wall_y], mapa.center))
+        wall = Muda_Referencia([wall_x,wall_y], mapa.center)
         
-        mapa.matriz[wall[POS_Y]][wall[POS_X]] += 1
- 
+        walls_xs.append(wall[POS_X])
+        walls_ys.append(wall[POS_Y])
+        
+        known_ = (Retorna_Espacos_Conhecidos([x[i],y[i]], [wall_x,wall_y], ang_rad))
+        
+        for i in range(len(known_[POS_X])):
+            known_xs.append(known_[POS_X][i])
+            known_ys.append(known_[POS_Y][i])
+        
     
-    print("Mapa = ")
-    print(mapa)
     
-    return mapa_hit
+    # Marca pontos conhecidos (MISS) como 0
+    for i in range(len(known_xs)):
+        [known_xs[i], known_ys[i]] = Muda_Referencia([known_xs[i],  known_ys[i]], mapa.center)
+        if known_ys[i] < y_size and known_xs[i] < x_size:
+            mapa.matriz[known_ys[i]][known_xs[i]] = 0
+    
+    # Marca pontos conhecidos (HIT) como 1
+    for i in range(len(walls_xs)):
+        mapa.matriz[walls_ys[i]][walls_xs[i]] = 1
+    
+    # # Marca posicao do robo na grid
+    # mapa.matriz[mapa.center[POS_Y]][mapa.center[POS_X]] = 2
+
+    return mapa
 
 
+######################
+#                    #
+#  Código Principal  #
+#                    #
+######################
 print("="*50+"\n\n")
 
 # Inicializa mapas de hit e miss
@@ -214,11 +255,7 @@ while True:
     # print("angulo  =", angulo)
     
     medidas = Obtem_Distancias(angulo)
-    # print(medidas)
-    # print("\n")
-    
     mapa_1 = Cria_Mapa_Distancias(delta_pos_atual, medidas)
     
-    # print("Mapa 2 =")
-    # for line in mapa_1:
-    #     print(line)
+    print(mapa_1)
+    
