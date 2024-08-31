@@ -32,29 +32,29 @@ while caminho:
   direcao = [caminho[0][i] - caminho[1][i] for i in range(len(caminho[0]))] # [1,0] = Ir para frente | [-1,0] = Ir para trás | [0,1] = Ir para a esquerda | [0,-1] = Ir para a direita
   caminho.pop(0) # Tira o primeiro elemento do caminho
   
-  if direcao[0] != 0:  # Se for andar na direção vertical
+  if direcao[0] != 0:
       angle = sensor_giro.angle
       if abs(angle) - 0 > 3:
-          controle_direct.on_for_degrees(steering = -angle , speed=3, degrees=180)
+          controle_direct.on_for_degrees(steering = -angle , speed=2, degrees=180)
           time.sleep(300/1000)
           
-      controle_direct.on_for_seconds(steering = 0, speed=17 * direcao[0] , seconds=2)
+      controle_direct.on_for_seconds(steering = 0, speed=17 * direcao[0] , seconds=2.7)
       time.sleep(300/1000)
       
-  if direcao[1] != 0:  # Se for andar na direção horizontal
+  if direcao[1] != 0:
       controle_direct.on_for_degrees(steering = -90 * direcao[1], speed=18, degrees=180)
       time.sleep(500/1000)
       
       angle = sensor_giro.angle
       if abs(angle - 90) > 3 and direcao[1] == -1:
-          controle_direct.on_for_degrees(steering = -(angle-90) , speed=3, degrees=180)
+          controle_direct.on_for_degrees(steering = -(angle-90) , speed=2, degrees=180)
           time.sleep(300/1000)
           
       if abs(angle + 90) > 3 and direcao[1] == 1:
-          controle_direct.on_for_degrees(steering = -(angle+90) , speed=3, degrees=180)
+          controle_direct.on_for_degrees(steering = -(angle+90) , speed=2, degrees=180)
           time.sleep(300/1000)
 
-      controle_direct.on_for_seconds(steering = 0, speed=17 , seconds=2.5)
+      controle_direct.on_for_seconds(steering = 0, speed=17 , seconds=2.7)
       time.sleep(300/1000)
     
       controle_direct.on_for_degrees(steering=90 * direcao[1], speed=18, degrees=180)
