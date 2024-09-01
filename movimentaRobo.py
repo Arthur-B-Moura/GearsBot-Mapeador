@@ -30,7 +30,13 @@ controle_direct = MoveSteering(OUTPUT_A, OUTPUT_B) # Movimento com curva
 
 def Movimento_Robo(caminho):
     while caminho:
-      direcao = [caminho[0][i] - caminho[1][i] for i in range(len(caminho[0]))] # [1,0] = Ir para frente | [-1,0] = Ir para trás | [0,1] = Ir para a esquerda | [0,-1] = Ir para a direita
+      print("len(caminho[0]) = ", len(caminho[0]))
+      print("len(caminho) = ", len(caminho))
+      
+      if len(caminho) > 1:
+        direcao = [caminho[0][i] - caminho[1][i] for i in range(len(caminho[0]))] # [1,0] = Ir para frente | [-1,0] = Ir para trás | [0,1] = Ir para a esquerda | [0,-1] = Ir para a direita
+      else: break
+      
       caminho.pop(0) # Tira o primeiro elemento do caminho
       
       if direcao[0] != 0:
