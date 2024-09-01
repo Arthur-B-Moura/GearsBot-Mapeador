@@ -30,7 +30,6 @@ controle_direct = MoveSteering(OUTPUT_A, OUTPUT_B) # Movimento com curva
 
 def Movimento_Robo(caminho):
     while caminho:
-      print("len(caminho[0]) = ", len(caminho[0]))
       print("len(caminho) = ", len(caminho))
       
       if len(caminho) > 1:
@@ -39,31 +38,31 @@ def Movimento_Robo(caminho):
       
       caminho.pop(0) # Tira o primeiro elemento do caminho
       
-      if direcao[0] != 0:
+      if direcao[1] != 0:
           angle = sensor_giro.angle
           if abs(angle) - 0 > 3:
               controle_direct.on_for_degrees(steering = -angle , speed=2, degrees=180)
               time.sleep(300/1000)
               
-          controle_direct.on_for_seconds(steering = 0, speed=17 * direcao[0] , seconds=2.7)
+          controle_direct.on_for_seconds(steering = 0, speed=17 * direcao[1] , seconds=2.7)
           time.sleep(300/1000)
           
-      if direcao[1] != 0:
-          controle_direct.on_for_degrees(steering = -90 * direcao[1], speed=18, degrees=180)
+      if direcao[0] != 0:
+          controle_direct.on_for_degrees(steering = -90 * direcao[0], speed=18, degrees=180)
           time.sleep(500/1000)
           
           angle = sensor_giro.angle
-          if abs(angle - 90) > 3 and direcao[1] == -1:
+          if abs(angle - 90) > 3 and direcao[0] == -1:
               controle_direct.on_for_degrees(steering = -(angle-90) , speed=2, degrees=180)
               time.sleep(300/1000)
               
-          if abs(angle + 90) > 3 and direcao[1] == 1:
+          if abs(angle + 90) > 3 and direcao[0] == 1:
               controle_direct.on_for_degrees(steering = -(angle+90) , speed=2, degrees=180)
               time.sleep(300/1000)
     
           controle_direct.on_for_seconds(steering = 0, speed=17 , seconds=2.7)
           time.sleep(300/1000)
         
-          controle_direct.on_for_degrees(steering=90 * direcao[1], speed=18, degrees=180)
+          controle_direct.on_for_degrees(steering=90 * direcao[0], speed=18, degrees=180)
         
       time.sleep(1)
