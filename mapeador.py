@@ -3,7 +3,9 @@
 # Import the necessary libraries
 import time
 import math
-from mapas import Mapa
+
+from mapas   import Mapa
+from caminho import Movimento_Robo
 
 from ev3dev2.motor import *       # MoveTank(), MoveSteering(), LargeMotor()
 from ev3dev2.sensor.lego import * # GyroSensor(), LaserRangeSensor(), GPSSensor()
@@ -30,7 +32,7 @@ controle_direct = MoveSteering(OUTPUT_A, OUTPUT_B) # Movimento com curva
 alto_falante = Sound()
 
 # Constantes e valores importantes
-ANGULO_GIRO_LIDAR = 15
+ANGULO_GIRO_LIDAR = 45
 VELOCIDADE_GIRO_LIDAR = 10
 LIDAR_SLEEP_TIME = 0.01
 
@@ -104,9 +106,6 @@ def Distancias_Para_Coordenada(distancias, delta_pos):
 def Muda_Referencia(vetor, centro):
     coord = [0,0]
     
-    # print("centro =", centro)
-    # print("vetor = ", vetor)
-    
     coord[POS_X] = centro[POS_X] + vetor[POS_X]
     coord[POS_Y] = centro[POS_Y] - vetor[POS_Y]
     
@@ -133,7 +132,7 @@ def Retorna_Espacos_Conhecidos(vetor, wall, ang_v_rad):
         return lista
     
     
-    while(abs(x)-abs(wall[POS_X]) < 0 and (abs(y)-abs(wall[POS_Y])) < 0):
+    while(abs(x)-abs(wall[POS_X]) < 0 or (abs(y)-abs(wall[POS_Y])) < 0):
         if vetor[POS_X] > 0: x += 1
         if vetor[POS_X] < 0: x -= 1
       
@@ -144,7 +143,7 @@ def Retorna_Espacos_Conhecidos(vetor, wall, ang_v_rad):
     return lista
     
 
-# def Atualiza_Mapa_Hit(delta_pos, coord, distancias, mapa_hit):
+
 def Cria_Mapa_Distancias(delta_pos, raw_values):
     
     dist = Distancias_Para_Coordenada(raw_values, delta_pos)
@@ -164,8 +163,8 @@ def Cria_Mapa_Distancias(delta_pos, raw_values):
     
     # Tamanho da grid de acordo com leitura
     # +1 para considerar o espaco em que o robo esta
-    y_size = int(mapa.tam[POS_NORTE] + mapa.tam[POS_SUL])+1   # Tamanho vertical   (Norte -> Sul)
     x_size = int(mapa.tam[POS_LESTE] + mapa.tam[POS_OESTE])+1 # Tamanho horizontal (Leste -> Oeste)
+    y_size = int(mapa.tam[POS_NORTE] + mapa.tam[POS_SUL])  +1 # Tamanho vertical   (Norte -> Sul)
     
     # Cria matriz de acordo com tamanho
     # 8 é usado como valor buffer para representar lugares desconhecidos
@@ -234,6 +233,121 @@ def Cria_Mapa_Distancias(delta_pos, raw_values):
     return mapa
 
 
+def M_cpy(matriz):
+    cpy = []    
+    
+    for line in matriz:
+        cpy.append(line)
+    
+    return cpy
+
+
+
+def encontrarCaminho(mapaDist, origemX,origemY,destinoX,destinoY,linhas,colunas):
+    direcoes = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+    caminho = []
+    x,y = origemX,origemY # x,y iniciais do robô
+
+    while (x,y) != (destinoX,destinoY): # Enquanto o robô não estiver no lugar, não para
+        caminho.append((x,y))
+        for dx,dy in direcoes:
+            nx,ny = x + dx, y + dy
+
+        # Verifica se o quadrado adjacente possui um número menor que o atual
+            if 0 <= nx < linhas and 0 <= ny < colunas and mapaDist[nx][ny] < mapaDist[x][y] and mapaDist[nx][ny] != -1:
+                x, y = nx, ny
+                break
+
+    caminho.append((destinoX, destinoY)) # Adiciona a coordenada [0,0]
+
+    return caminho
+
+
+
+# Caminho_Prox_Desconhecido(hits, unknown, delta_coord_atual)
+def Caminho_Prox_Desconhecido(mapa_paredes, mapa_desconhecidos, delta_coord):
+    # Marca ponto de partida do robo dentro da matriz
+    pos_robo = [mapa_paredes.center[POS_X]+delta_coord[POS_X], mapa_paredes.center[POS_Y]+delta_coord[POS_Y]]
+
+    dist = Mapa()
+    dist.center = mapa_paredes.center
+    dist.tam    = mapa_paredes.tam
+    
+    # x_size = int(mapa.tam[POS_LESTE] + mapa.tam[POS_OESTE])+1 # Tamanho horizontal (Leste -> Oeste)
+    # y_size = int(mapa.tam[POS_NORTE] + mapa.tam[POS_SUL])  +1 # Tamanho vertical   (Norte -> Sul)
+    size_x = int(dist.tam[POS_LESTE] + dist.tam[POS_OESTE])+1
+    size_y = int(dist.tam[POS_NORTE] + dist.tam[POS_SUL])  +1
+    
+    dist.matriz = [[-1 for _ in range(size_x)] for _ in range(size_y)]
+    
+    # Ponto de inicio recebe distancia 0
+    dist.matriz[pos_robo[POS_Y]][pos_robo[POS_X]] = 0 
+    
+    encontrado = False
+    delta = 0
+    
+    # Matriz [QTD_VALORES][2] que indica ultimos pontos marcados
+    last_marked = [pos_robo]
+    new_last_m  = []
+    coord_dest = [pos_robo[POS_X], pos_robo[POS_Y]]
+    
+    while(encontrado == False):
+        delta += 1
+        
+        # Para cada ponto marcado recentemente
+        for p in last_marked:
+            print("p =", p)
+            if dist.matriz[p[POS_Y] - delta][p[POS_X]] == -1 and mapa_paredes.matriz[p[POS_Y] - delta][p[POS_X]] != 1:
+                dist.matriz[p[POS_Y] - delta][p[POS_X]] = delta
+                if mapa_desconhecidos.matriz[p[POS_Y] - delta][p[POS_X]] > 0: 
+                    coord_dest = [p[POS_X], p[POS_Y] - delta+1]
+                    encontrado = True
+                    break 
+                new_last_m.append([p[POS_X], p[POS_Y] - delta])
+            
+            if dist.matriz[p[POS_Y] + delta][p[POS_X]] == -1 and mapa_paredes.matriz[p[POS_Y] + delta][p[POS_X]] != 1:
+                dist.matriz[p[POS_Y] + delta][p[POS_X]] = delta
+                if mapa_desconhecidos.matriz[p[POS_Y] + delta][p[POS_X]] > 0: 
+                    coord_dest = [p[POS_X], p[POS_Y] + delta-1]
+                    encontrado = True
+                    break 
+                new_last_m.append([p[POS_X], p[POS_Y] + delta])
+            
+            if dist.matriz[p[POS_Y]][p[POS_X] + delta] == -1 and mapa_paredes.matriz[p[POS_Y]][p[POS_X] + delta] != 1:
+                dist.matriz[p[POS_Y]][p[POS_X] + delta] = delta
+                if mapa_desconhecidos.matriz[p[POS_Y]][p[POS_X] + delta] > 0: 
+                    coord_dest = [p[POS_X] + delta-1, p[POS_Y]]
+                    encontrado = True
+                    break 
+                new_last_m.append([p[POS_X] + delta, p[POS_Y]])
+            
+            if dist.matriz[p[POS_Y]][p[POS_X] - delta] == -1 and mapa_paredes.matriz[p[POS_Y]][p[POS_X] - delta] != 1:
+                dist.matriz[p[POS_Y]][p[POS_X] - delta] = delta
+                if mapa_desconhecidos.matriz[p[POS_Y]][p[POS_X] - delta] > 0: 
+                    coord_dest = [p[POS_X] - delta+1, p[POS_Y]]
+                    encontrado = True
+                    break 
+                new_last_m.append([p[POS_X] - delta, p[POS_Y]])
+        
+        
+        # print("new_last_m =", new_last_m)
+        last_marked = M_cpy(new_last_m)
+        new_last_m = []
+        
+        # print("last_marked =", last_marked)
+        if last_marked == []:
+            return None
+        
+        
+    print("origem =", pos_robo)
+    print("destino =", coord_dest)
+        
+    caminho = encontrarCaminho(dist.matriz, coord_dest[POS_X], coord_dest[POS_Y], pos_robo[POS_X], pos_robo[POS_Y],size_x,size_y)
+
+    print("Caminho =", caminho)
+    return caminho
+
+
 ######################
 #                    #
 #  Código Principal  #
@@ -242,20 +356,48 @@ def Cria_Mapa_Distancias(delta_pos, raw_values):
 print("="*50+"\n\n")
 
 # Inicializa mapas de hit e miss
-hits = Mapa()
-miss = Mapa()
+hits    = Mapa()
+miss    = Mapa()
+unknown = Mapa()
 
 
 # Loop principal
 while True:
-    delta_pos_atual = [sensor_gps.x-P_INICIAL[0], sensor_gps.y-P_INICIAL[1]]
-    angulo          = sensor_giro.angle # Obtem angulo atual
+    # Posicioes atuais do robo em relacao ao ponto inicial em centimetros e em coordenadas
+    delta_pos_atual   = [sensor_gps.x-P_INICIAL[POS_X], sensor_gps.y-P_INICIAL[POS_Y]]
+    delta_coord_atual = [round(delta_pos_atual[POS_X]/TAMANHO_GRID_CM), round(delta_pos_atual[POS_Y]/TAMANHO_GRID_CM)]
+    
+    # Obtem angulo atual de giro do robô
+    angulo = sensor_giro.angle 
     
     # print("posicao =", delta_pos_atual)
     # print("angulo  =", angulo)
     
+    # Obtem uma serie de medidas e seu mapa
     medidas = Obtem_Distancias(angulo)
     mapa_1 = Cria_Mapa_Distancias(delta_pos_atual, medidas)
     
+    hits.atualiza(mapa_1, "hit")
+    miss.atualiza(mapa_1, "miss")
+    unknown.atualiza(mapa_1, "unknown")
+    
+    print("mapa 1 =")
     print(mapa_1)
     
+    print("hit =")
+    print(hits)
+    
+    print("miss =")
+    print(miss)
+    
+    print("desconhecidos =")
+    print(unknown)
+    
+    movimento = Caminho_Prox_Desconhecido(hits, unknown, delta_coord_atual)
+    
+    if movimento != None:
+        Movimento_Robo(movimento)
+    else:
+        print("Mapeamento concluido!")
+    
+    time.sleep(1)
