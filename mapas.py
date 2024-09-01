@@ -104,25 +104,24 @@ class Mapa:
                 i_opc = i - (new_m.tam[POS_NORTE]-mapa_opc.tam[POS_NORTE]) 
                 j_opc = j - (new_m.tam[POS_OESTE]-mapa_opc.tam[POS_OESTE])
                 
-                if i_opc in range(mapa_opc.tam[POS_SUL]+mapa_opc.tam[POS_NORTE]) and j_opc in range(mapa_opc.tam[POS_OESTE]+mapa_opc.tam[POS_LESTE]): 
+                if i_opc in range(mapa_opc.tam[POS_SUL]+mapa_opc.tam[POS_NORTE]+1) and j_opc in range(mapa_opc.tam[POS_OESTE]+mapa_opc.tam[POS_LESTE]+1): 
                    val = 1 if (map_type == "hit" and mapa_opc.matriz[i_opc][j_opc] == 1) or (map_type == "miss" and mapa_opc.matriz[i_opc][j_opc] == 0) else 0
                 else: val = 0
                 
                 i_old = i - (new_m.tam[POS_NORTE]-self.tam[POS_NORTE]) 
                 j_old = j - (new_m.tam[POS_OESTE]-self.tam[POS_OESTE]) 
 
-                # print("d_tam =", d_tam)
 
-                # print(f"i_old = {i_old}")
-                # print(f"j_old = {j_old}")
-
-                if i_old in range(self.tam[POS_SUL]+self.tam[POS_NORTE]) and j_old in range(self.tam[POS_OESTE]+self.tam[POS_LESTE]): 
-                    # print(f"i_old = {i_old}")
-                    # print(f"j_old = {j_old}")
-
+                if i_old in range(self.tam[POS_SUL]+self.tam[POS_NORTE]+1) and j_old in range(self.tam[POS_OESTE]+self.tam[POS_LESTE]+1): 
                     new_m.matriz[i][j] = self.matriz[i_old][j_old] + val 
-
                 else: new_m.matriz[i][j] = val 
+                
+                # Atualização de posições para mapa de espaços desconhecidos
+                if map_type == "unknown":
+                    if i_opc in range(mapa_opc.tam[POS_SUL]+mapa_opc.tam[POS_NORTE]+1) and j_opc in range(mapa_opc.tam[POS_OESTE]+mapa_opc.tam[POS_LESTE]+1): 
+                        if mapa_opc.matriz[i_opc][j_opc] == 8: new_m.matriz[i][j] = 1
+                        if mapa_opc.matriz[i_opc][j_opc] != 8: new_m.matriz[i][j] = 0
+                
                 
         
         # Atualiza valores da matriz inicial
