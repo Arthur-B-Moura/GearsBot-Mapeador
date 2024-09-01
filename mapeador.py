@@ -118,6 +118,7 @@ def Muda_Referencia(vetor, centro):
 # para qual ele aponta
 def Retorna_Espacos_Conhecidos(vetor, wall, ang_v_rad):
     lista = [[],[]]
+    num = 0
     
     x = 1 if vetor[POS_X] < 0 else 0
     y = 0
@@ -132,7 +133,7 @@ def Retorna_Espacos_Conhecidos(vetor, wall, ang_v_rad):
         return lista
     
     
-    while(abs(x)-abs(wall[POS_X]) < 0 or (abs(y)-abs(wall[POS_Y])) < 0):
+    while(abs(x)-abs(wall[POS_X]) < 0 or (abs(y)-abs(wall[POS_Y])) < 0) and num < 10: 
         if vetor[POS_X] > 0: x += 1
         if vetor[POS_X] < 0: x -= 1
       
@@ -140,6 +141,7 @@ def Retorna_Espacos_Conhecidos(vetor, wall, ang_v_rad):
         
         lista[POS_X].append(x)
         lista[POS_Y].append(y)
+        num += 1
     return lista
     
 
@@ -211,17 +213,19 @@ def Cria_Mapa_Distancias(delta_pos, raw_values):
         
         known_ = (Retorna_Espacos_Conhecidos([x[i],y[i]], [wall_x,wall_y], ang_rad))
         
-        for i in range(len(known_[POS_X])):
-            known_xs.append(known_[POS_X][i])
-            known_ys.append(known_[POS_Y][i])
+        for j in range(len(known_[POS_X])):
+            known_xs.append(known_[POS_X][j])
+            known_ys.append(known_[POS_Y][j])
         
     
     
     # Marca pontos conhecidos (MISS) como 0
     for i in range(len(known_xs)):
         [known_xs[i], known_ys[i]] = Muda_Referencia([known_xs[i],  known_ys[i]], mapa.center)
-        if known_ys[i] < y_size and known_xs[i] < x_size:
-            mapa.matriz[known_ys[i]][known_xs[i]] = 0
+        if known_ys[i] in range(y_size) and known_xs[i] in range(x_size):
+            print("known_xs =", known_xs)
+            print("known_ys =", known_ys)
+            mapa.matriz[int(known_ys[i])][int(known_xs[i])] = 0
     
     # Marca pontos conhecidos (HIT) como 1
     for i in range(len(walls_xs)):
@@ -238,28 +242,28 @@ def M_cpy(matriz):
     
     for line in matriz:
         cpy.append(line)
-    
     return cpy
 
 
 
-def encontrarCaminho(mapaDist, origemX,origemY,destinoX,destinoY,linhas,colunas):
+def encontrarCaminho(mapaDist, origemX,origemY,destinoX,destinoY,size_x,size_y):
     direcoes = [(-1, 0), (1, 0), (0, -1), (0, 1)]
     caminho = []
     x,y = origemX,origemY # x,y iniciais do robô
-
-    while (x,y) != (destinoX,destinoY): # Enquanto o robô não estiver no lugar, não para
+    num = 0
+    
+    while ((x,y) != (destinoX,destinoY)) and (num <5): # Enquanto o robô não estiver no lugar, não para
         caminho.append((x,y))
         for dx,dy in direcoes:
             nx,ny = x + dx, y + dy
 
         # Verifica se o quadrado adjacente possui um número menor que o atual
-            if 0 <= nx < linhas and 0 <= ny < colunas and mapaDist[nx][ny] < mapaDist[x][y] and mapaDist[nx][ny] != -1:
+            if (0 <= nx < size_x) and (0 <= ny < size_y) and (mapaDist[ny][nx] > mapaDist[y][x]) and (mapaDist[ny][nx] != -1):
                 x, y = nx, ny
                 break
-
+        num += 1
+        
     caminho.append((destinoX, destinoY)) # Adiciona a coordenada [0,0]
-
     return caminho
 
 
@@ -353,9 +357,8 @@ def Caminho_Prox_Desconhecido(mapa_paredes, mapa_desconhecidos, delta_coord):
 #  Código Principal  #
 #                    #
 ######################
-print("="*50+"\n\n")
 
-# Inicializa mapas de hit e miss
+# Inicializa mapas de hit, miss e unknown
 hits    = Mapa()
 miss    = Mapa()
 unknown = Mapa()
@@ -363,18 +366,23 @@ unknown = Mapa()
 
 # Loop principal
 while True:
+    print("="*50+"\n\n")
+    
     # Posicioes atuais do robo em relacao ao ponto inicial em centimetros e em coordenadas
-    delta_pos_atual   = [sensor_gps.x-P_INICIAL[POS_X], sensor_gps.y-P_INICIAL[POS_Y]]
+    delta_pos_atual   = [P_INICIAL[POS_X]-sensor_gps.x, P_INICIAL[POS_Y]-sensor_gps.y]
     delta_coord_atual = [round(delta_pos_atual[POS_X]/TAMANHO_GRID_CM), round(delta_pos_atual[POS_Y]/TAMANHO_GRID_CM)]
     
     # Obtem angulo atual de giro do robô
     angulo = sensor_giro.angle 
     
-    # print("posicao =", delta_pos_atual)
-    # print("angulo  =", angulo)
+    print("posicao =", delta_pos_atual)
+    print("angulo  =", angulo)
     
     # Obtem uma serie de medidas e seu mapa
     medidas = Obtem_Distancias(angulo)
+    
+    print("medidas =", medidas)
+    
     mapa_1 = Cria_Mapa_Distancias(delta_pos_atual, medidas)
     
     hits.atualiza(mapa_1, "hit")
@@ -397,7 +405,9 @@ while True:
     
     if movimento != None:
         Movimento_Robo(movimento)
+        print("Movimento concluido!")
     else:
         print("Mapeamento concluido!")
     
     time.sleep(1)
+    
