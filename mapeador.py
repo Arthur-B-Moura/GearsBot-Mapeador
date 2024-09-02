@@ -45,7 +45,7 @@ touch_sensor_in4 = TouchSensor(INPUT_4)
 # ------------------------- #
 #  Valores de customização  #
 # ------------------------- #
-ANGULO_GIRO_LIDAR = 5
+ANGULO_GIRO_LIDAR = 15
 VELOCIDADE_GIRO_LIDAR = 10
 LIDAR_SLEEP_TIME = 0.01
 
@@ -227,12 +227,12 @@ def Cria_Mapa_Distancias(delta_pos, raw_values, delta_coord):
         
 
         if x[i] == 0: val_x = 0
-        if x[i] >  0 or round(math.cos(ang_rad)+0.3) >=  1: val_x =  1
-        if x[i] <  0 or round(math.cos(ang_rad)-0.3) <= -1: val_x = -1
+        if x[i] >  0 or round(math.cos(ang_rad)+0.2) >=  1: val_x =  1
+        if x[i] <  0 or round(math.cos(ang_rad)-0.2) <= -1: val_x = -1
         
         if y[i] == 0: val_y = 0
-        if y[i] >  0 or round(math.sin(ang_rad)+0.3) >=  1: val_y =  1
-        if y[i] <  0 or round(math.sin(ang_rad)-0.3) <= -1: val_y = -1
+        if y[i] >  0 or round(math.sin(ang_rad)+0.2) >=  1: val_y =  1
+        if y[i] <  0 or round(math.sin(ang_rad)-0.2) <= -1: val_y = -1
         
         # Marca parede como espaço para qual o vetor aponta
         wall_x = x[i]+val_x
@@ -263,8 +263,8 @@ def Cria_Mapa_Distancias(delta_pos, raw_values, delta_coord):
             mapa.matriz[walls_ys[i]][walls_xs[i]] = 1
     
     # # # Marca posicao do robo na grid
-    mapa.matriz[mapa.tam[POS_NORTE]][mapa.tam[POS_OESTE]] = 3
-    mapa.matriz[mapa.center[POS_Y]][mapa.center[POS_X]] = 2
+    # mapa.matriz[mapa.tam[POS_NORTE]][mapa.tam[POS_OESTE]] = 3
+    # mapa.matriz[mapa.center[POS_Y]][mapa.center[POS_X]] = 2
 
     return mapa
 
