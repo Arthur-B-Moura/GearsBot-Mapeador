@@ -14,6 +14,10 @@ from ev3dev2.sound import Sound
 from ev3dev2.sensor import *
 from ev3dev2.sensor.virtual import *
 
+# --------------------- #
+#  Sensores e atuadores #
+# --------------------- #
+
 # Define motores de acordo com os atuadores de saída
 motor_esquerdo = LargeMotor(OUTPUT_A) # Motor da roda esquerda
 motor_direito  = LargeMotor(OUTPUT_B) # Motor da roda direita
@@ -31,13 +35,25 @@ controle_direct = MoveSteering(OUTPUT_A, OUTPUT_B) # Movimento com curva
 #
 alto_falante = Sound()
 
-# Constantes e valores importantes
+touch_sensor_in1 = TouchSensor(INPUT_1)
+touch_sensor_in2 = TouchSensor(INPUT_2)
+touch_sensor_in3 = TouchSensor(INPUT_3)
+touch_sensor_in4 = TouchSensor(INPUT_4)
+
+
+
+# ------------------------- #
+#  Valores de customização  #
+# ------------------------- #
 ANGULO_GIRO_LIDAR = 5
 VELOCIDADE_GIRO_LIDAR = 10
 LIDAR_SLEEP_TIME = 0.01
 
-TAMANHO_GRID_CM = 25
+TAMANHO_GRID_CM = 10
 
+# ------------ #
+#  Constantes  #
+# ------------ #
 QTD_MEDIDAS_LIDAR = int(360/ANGULO_GIRO_LIDAR)
 P_INICIAL = [sensor_gps.x, sensor_gps.y]
 
@@ -49,22 +65,22 @@ POS_SUL   = 1
 POS_LESTE = 2
 POS_OESTE = 3
 
-######################
-# Codigo não editado #
-######################
-touch_sensor_in1 = TouchSensor(INPUT_1)
-touch_sensor_in2 = TouchSensor(INPUT_2)
-touch_sensor_in3 = TouchSensor(INPUT_3)
-touch_sensor_in4 = TouchSensor(INPUT_4)
-#############################
-# Fim do codigo não editado #
-#############################
+# Inicializa mapas de hit, miss e unknown
+hits    = Mapa()
+miss    = Mapa()
+unknown = Mapa()
 
-# -------------------------------------------- #
-# Mapeia QTD_MEDIDAS_LIDAR pontos de distancia #
-# -------------------------------------------- #
+
+#===========================#
+#                           #
+#  ~~~ Seção de Funções ~~~ #
+#                           #
+#===========================#
+
+# --------------------------------------------- #
+#  Mapeia QTD_MEDIDAS_LIDAR pontos de distancia #
+# --------------------------------------------- #
 def Obtem_Distancias(giro_robo):
-    # TODO: conferir ajuste do angulo de inicio a partir do valor do giroscopio
     distancias = []
     
     # Ajusta posicao do lidar
@@ -142,7 +158,7 @@ def Retorna_Espacos_Conhecidos(vetor, wall, ang_v_rad, delta_coord):
         return lista
     
     
-    while(abs(x)-abs(wall[POS_X]) < 0 or (abs(y)-abs(wall[POS_Y])) < 0) and num < 10: 
+    while(abs(x)-abs(wall[POS_X]) < 0 or (abs(y)-abs(wall[POS_Y])) < 0) and num < 1000: 
         if vetor[POS_X] > 0: x += 1
         if vetor[POS_X] < 0: x -= 1
       
@@ -180,12 +196,6 @@ def Cria_Mapa_Distancias(delta_pos, raw_values, delta_coord):
     mapa.tam[POS_LESTE] = (maiores[POS_X]+1)    - delta_coord[POS_X]
     mapa.tam[POS_OESTE] = abs(menores[POS_X]-1) + delta_coord[POS_X]
     
-    
-    # if delta_coord[POS_Y] < -mapa.tam[POS_SUL]:   mapa.tam[POS_SUL]     +=  delta_coord[POS_Y]
-    # if delta_coord[POS_X] < -mapa.tam[POS_LESTE]: mapa.tam[POS_LESTE] -=  delta_coord[POS_X]
-    
-    # mapa.tam = [maiores[POS_Y]+1, abs(menores[POS_Y]-1), (maiores[POS_X]+1)+delta_coord[POS_X], abs(menores[POS_X]-1)-delta_coord[POS_X]]
-    # print("tam =", mapa.tam)
     
     # Tamanho da grid de acordo com leitura
     # +1 para considerar o espaco em que o robo esta
@@ -241,9 +251,6 @@ def Cria_Mapa_Distancias(delta_pos, raw_values, delta_coord):
             known_ys.append(known_[POS_Y][j])
         
     
-    # print("walls_xs =", walls_xs)
-    # print("walls_ys =", walls_ys)
-    
     # Marca pontos conhecidos (MISS) como 0
     for i in range(len(known_xs)):
         [known_xs[i], known_ys[i]] = Muda_Referencia([known_xs[i],  known_ys[i]], mapa.center)
@@ -284,7 +291,7 @@ def encontrarCaminho(mapaDist, origemX,origemY,destinoX,destinoY,size_x,size_y):
     x,y = origemX,origemY # x,y iniciais do robô
     num = 0
     
-    while ((x,y) != (destinoX,destinoY)) and (num <15): # Enquanto o robô não estiver no lugar, não para
+    while ((x,y) != (destinoX,destinoY)): # Enquanto o robô não estiver no lugar, não para
         caminho_.append((x,y))
         for (dx,dy) in direcoes:
             nx,ny = x + dx, y + dy
@@ -391,19 +398,13 @@ def Caminho_Prox_Desconhecido(mapa_paredes, mapa_desconhecidos, delta_coord):
     return caminho
 
 
-######################
-#                    #
-#  Código Principal  #
-#                    #
-######################
-
-# Inicializa mapas de hit, miss e unknown
-hits    = Mapa()
-miss    = Mapa()
-unknown = Mapa()
 
 
-# Loop principal
+#=========================#
+#                         #
+#  ~~~ Loop Principal ~~~ #
+#                         #
+#=========================#
 while True:
     print("="*50+"\n\n")
     
