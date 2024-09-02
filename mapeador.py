@@ -45,7 +45,7 @@ touch_sensor_in4 = TouchSensor(INPUT_4)
 # ------------------------- #
 #  Valores de customização  #
 # ------------------------- #
-ANGULO_GIRO_LIDAR = 15
+ANGULO_GIRO_LIDAR = 5
 VELOCIDADE_GIRO_LIDAR = 10
 LIDAR_SLEEP_TIME = 0.01
 
@@ -92,7 +92,7 @@ def Obtem_Distancias(giro_robo):
         distancias.append(medida) # Salva valor lido no array
         
         # Move o sensor lidar de acordo com o angulo dado    
-        motor_lidar.on_to_position(position=ANGULO_GIRO_LIDAR*(i+1),speed=VELOCIDADE_GIRO_LIDAR)
+        motor_lidar.on_to_position(position=(ANGULO_GIRO_LIDAR*(i+1))-giro_robo,speed=VELOCIDADE_GIRO_LIDAR)
         time.sleep(LIDAR_SLEEP_TIME)
     return distancias
 
@@ -227,12 +227,12 @@ def Cria_Mapa_Distancias(delta_pos, raw_values, delta_coord):
         
 
         if x[i] == 0: val_x = 0
-        if x[i] >  0 or round(math.cos(ang_rad)+0.2) >=  1: val_x =  1
-        if x[i] <  0 or round(math.cos(ang_rad)-0.2) <= -1: val_x = -1
+        if x[i] >  0 or round(math.cos(ang_rad)+0.35) >=  1: val_x =  1
+        if x[i] <  0 or round(math.cos(ang_rad)-0.35) <= -1: val_x = -1
         
         if y[i] == 0: val_y = 0
-        if y[i] >  0 or round(math.sin(ang_rad)+0.2) >=  1: val_y =  1
-        if y[i] <  0 or round(math.sin(ang_rad)-0.2) <= -1: val_y = -1
+        if y[i] >  0 or round(math.sin(ang_rad)+0.35) >=  1: val_y =  1
+        if y[i] <  0 or round(math.sin(ang_rad)-0.35) <= -1: val_y = -1
         
         # Marca parede como espaço para qual o vetor aponta
         wall_x = x[i]+val_x
@@ -432,26 +432,26 @@ while True:
     
     print("mapa 1 =")
     print(mapa_1)
-    time.sleep(1)
+    time.sleep(0.3)
     
     print("hit =")
     print(hits)
-    time.sleep(1)
+    time.sleep(0.3)
     
     print("miss =")
     print(miss)
-    time.sleep(1)
+    time.sleep(0.3)
     
     print("desconhecidos =")
     print(unknown)
-    time.sleep(1)
+    time.sleep(0.3)
     
     movimento = Caminho_Prox_Desconhecido(hits, unknown, delta_coord_atual)
     
     if movimento != None:
         Movimento_Robo(movimento, TAMANHO_GRID_CM, TAMANHO_GRID_CM)
         print("Movimento concluido!")
-        time.sleep(1)
+        time.sleep(0.5)
         
     else:
         print("Mapeamento concluido!")
