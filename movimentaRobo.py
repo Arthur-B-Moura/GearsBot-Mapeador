@@ -59,8 +59,11 @@ def Movimento_Robo(caminho):
               
           motor_esquerdo.off()
           motor_direito.off()
+          posPast = posAtual
+          posAtual = getPosition()
           
           time.sleep(300/1000)
+          
           
       if direcao[0] != 0:
           controle_direct.on_for_degrees(steering = -90 * direcao[0], speed=18, degrees=180)
@@ -75,7 +78,14 @@ def Movimento_Robo(caminho):
               controle_direct.on_for_degrees(steering = -(angle+90) , speed=2, degrees=180)
               time.sleep(300/1000)
     
-          controle_direct.on_for_seconds(steering = 0, speed=17 , seconds=2.7)
+          while abs(posAtual[0]) - abs(posPast[0]) <= TAM_GRID_X:
+              motor_esquerdo.on(15)
+              motor_direito.on(15)
+              
+          motor_esquerdo.off()
+          motor_direito.off()
+          posPast = posAtual
+          posAtual = getPosition()
           time.sleep(300/1000)
         
           controle_direct.on_for_degrees(steering=90 * direcao[0], speed=18, degrees=180)
