@@ -455,6 +455,11 @@ while True:
         
     else:
         print("Mapeamento concluido!")
+        mapa_final = Mapa()
+        mapa_final.Mapa_Final(hits, miss, unknown)
+        
+        print("Mapa final =")
+        print(mapa_final)
         time.sleep(3600)
     
     mapa_final = Mapa()
