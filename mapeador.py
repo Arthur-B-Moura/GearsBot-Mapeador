@@ -449,7 +449,7 @@ while True:
     movimento = Caminho_Prox_Desconhecido(hits, unknown, delta_coord_atual)
     
     if movimento != None:
-        Movimento_Robo(movimento)
+        Movimento_Robo(movimento, TAMANHO_GRID_CM, TAMANHO_GRID_CM)
         print("Movimento concluido!")
         time.sleep(1)
         
