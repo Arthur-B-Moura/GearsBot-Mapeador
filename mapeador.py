@@ -263,8 +263,8 @@ def Cria_Mapa_Distancias(delta_pos, raw_values, delta_coord):
             mapa.matriz[walls_ys[i]][walls_xs[i]] = 1
     
     # # # Marca posicao do robo na grid
-    mapa.matriz[mapa.tam[POS_NORTE]][mapa.tam[POS_OESTE]] = 3
-    mapa.matriz[mapa.center[POS_Y]][mapa.center[POS_X]] = 2
+    # mapa.matriz[mapa.tam[POS_NORTE]][mapa.tam[POS_OESTE]] = 3
+    # mapa.matriz[mapa.center[POS_Y]][mapa.center[POS_X]] = 2
 
     return mapa
 
