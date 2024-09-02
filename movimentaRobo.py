@@ -133,7 +133,7 @@ def Movimento_Robo(caminho,TAM_GRID_X,TAM_GRID_Y):
             print("Direita")
             
             # Gira
-            controle_direct.on_for_degrees(steering = 90 * direcao[0], speed=18, degrees=180)
+            controle_direct.on_for_degrees(steering = 90 * direcao[0], speed=16, degrees=180)
             time.sleep(500/1000)
           
             angle = sensor_giro.angle
@@ -175,7 +175,7 @@ def Movimento_Robo(caminho,TAM_GRID_X,TAM_GRID_Y):
             print("Esquerda")
             
             # Gira
-            controle_direct.on_for_degrees(steering = 90 * direcao[0], speed=18, degrees=180)
+            controle_direct.on_for_degrees(steering = -90 * direcao[0], speed=16, degrees=180)
             time.sleep(500/1000)
           
             angle = sensor_giro.angle
@@ -183,7 +183,7 @@ def Movimento_Robo(caminho,TAM_GRID_X,TAM_GRID_Y):
             # Corrige ângulo
             if abs(angle + 90) > 3:
                 print("angle (esq) =", angle)
-                controle_direct.on_for_degrees(steering = -(angle-90) , speed=2, degrees=180)
+                controle_direct.on_for_degrees(steering = -(angle+90) , speed=2, degrees=180)
                 time.sleep(300/1000)
             
             posAtual = getPosition()
@@ -209,6 +209,6 @@ def Movimento_Robo(caminho,TAM_GRID_X,TAM_GRID_Y):
             time.sleep(300/1000)
         
             # Corrige direcao
-            controle_direct.on_for_degrees(steering=-90 * direcao[0], speed=18, degrees=180)
+            controle_direct.on_for_degrees(steering=90 * direcao[0], speed=18, degrees=180)
         
     time.sleep(0.5)
