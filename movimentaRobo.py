@@ -15,6 +15,7 @@ from ev3dev2.sensor.virtual import *
 # Define motores de acordo com os atuadores de saída
 motor_esquerdo = LargeMotor(OUTPUT_A) # Motor da roda esquerda
 motor_direito  = LargeMotor(OUTPUT_B) # Motor da roda direita
+motor_lidar    = LargeMotor(OUTPUT_C) # Motor que gira o lidar
 
 # Define sensores de localizacao geoespacial
 sensor_giro  = GyroSensor(INPUT_6)       # Sensor giroscopio
@@ -61,8 +62,8 @@ def Movimento_Robo(caminho,TAM_GRID_X,TAM_GRID_Y):
         if direcao[1] == 1:
             print("Cima")
             
-            posPast = posAtual
             posAtual = getPosition()
+            posPast = posAtual
             angle = sensor_giro.angle
             
             # Corrige ângulo do robô
@@ -70,14 +71,19 @@ def Movimento_Robo(caminho,TAM_GRID_X,TAM_GRID_Y):
               controle_direct.on_for_degrees(steering = -angle , speed=2, degrees=180)
               time.sleep(300/1000)
             
+            posAtual = getPosition()
+            
             # Avança  
-            seguir = True if abs(posAtual[1]) - abs(posPast[1]) <= TAM_GRID_Y-SAFETY else False
+            seguir = True if abs(abs(posAtual[1]) - abs(posPast[1])) <= TAM_GRID_Y-SAFETY else False
             motor_esquerdo.on(VELOCIDADE_MOTOR)
             motor_direito.on(VELOCIDADE_MOTOR)
             
+            # Corrige posição do LIDAR
+            motor_lidar.on_to_position(position=0,speed=20)
             while (seguir == True):
                 posAtual = getPosition()
-                seguir = True if abs(posAtual[1]) - abs(posPast[1]) <= TAM_GRID_Y-SAFETY else False
+                seguir = True if abs(abs(posAtual[1]) - abs(posPast[1])) <= TAM_GRID_Y-SAFETY else False
+                if sensor_lidar.distance_centimeters <= SAFETY: seguir = False
                 
             # Desliga motores
             motor_esquerdo.off()
@@ -97,8 +103,8 @@ def Movimento_Robo(caminho,TAM_GRID_X,TAM_GRID_Y):
         if direcao[1] == -1:
             print("Baixo")
             
-            posPast = posAtual
             posAtual = getPosition()
+            posPast = posAtual
             angle = sensor_giro.angle
             
             # Corrige ângulo do robô
@@ -106,14 +112,19 @@ def Movimento_Robo(caminho,TAM_GRID_X,TAM_GRID_Y):
               controle_direct.on_for_degrees(steering = -angle , speed=2, degrees=180)
               time.sleep(300/1000)
             
+            posAtual = getPosition()
+            
             # Avança  
             seguir = True if abs(abs(posAtual[1]) - abs(posPast[1])) <= TAM_GRID_Y-SAFETY else False
             motor_esquerdo.on(-VELOCIDADE_MOTOR)
             motor_direito.on(-VELOCIDADE_MOTOR)
             
+            # Corrige posição do LIDAR
+            motor_lidar.on_to_position(position=180,speed=20)
             while (seguir == True):
                 posAtual = getPosition()
                 seguir = True if abs(abs(posAtual[1]) - abs(posPast[1])) <= TAM_GRID_Y-SAFETY else False
+                if sensor_lidar.distance_centimeters <= SAFETY: seguir = False
                 
             # Desliga motores
             motor_esquerdo.off()
@@ -152,9 +163,12 @@ def Movimento_Robo(caminho,TAM_GRID_X,TAM_GRID_Y):
             motor_esquerdo.on(-VELOCIDADE_MOTOR)
             motor_direito.on(-VELOCIDADE_MOTOR)
             
+            # Corrige posição do LIDAR
+            motor_lidar.on_to_position(position=180,speed=20)
             while (seguir == True):
                 posAtual = getPosition()
                 seguir = True if abs(abs(posAtual[0]) - abs(posPast[0])) <= TAM_GRID_X-SAFETY else False
+                if sensor_lidar.distance_centimeters <= SAFETY: seguir = False
             
               
             # Desliga motores
@@ -194,9 +208,12 @@ def Movimento_Robo(caminho,TAM_GRID_X,TAM_GRID_Y):
             motor_esquerdo.on(VELOCIDADE_MOTOR)
             motor_direito.on(VELOCIDADE_MOTOR)
             
+            # Corrige posição do LIDAR
+            motor_lidar.on_to_position(position=0,speed=20)
             while (seguir == True):
                 posAtual = getPosition()
                 seguir = True if abs(abs(posAtual[0]) - abs(posPast[0])) <= TAM_GRID_X-SAFETY else False
+                if sensor_lidar.distance_centimeters <= SAFETY: seguir = False
               
             # Desliga motores
             motor_esquerdo.off()
