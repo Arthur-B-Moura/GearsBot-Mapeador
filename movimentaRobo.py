@@ -25,11 +25,20 @@ sensor_gps   = GPSSensor(INPUT_8)        # Sensor GPS
 controle_tanque = MoveTank(OUTPUT_A, OUTPUT_B)     # Movimento retilineo
 controle_direct = MoveSteering(OUTPUT_A, OUTPUT_B) # Movimento com curva
 
-# Caminho do Robô
-# caminho = vetorCaminho
+# Constantes
+TAM_GRID_X = 10
+TAM_GRID_Y = 10
+
+def getPosition():
+    x = sensor_gps.x
+    y = sensor_gps.y
+    return [x,y]
 
 def Movimento_Robo(caminho):
+    posAtual = getPosition()
+    posPast = posAtual
     while caminho:
+
       print("len(caminho) = ", len(caminho))
       
       if len(caminho) > 1:
@@ -44,7 +53,13 @@ def Movimento_Robo(caminho):
               controle_direct.on_for_degrees(steering = -angle , speed=2, degrees=180)
               time.sleep(300/1000)
               
-          controle_direct.on_for_seconds(steering = 0, speed=17 * direcao[1] , seconds=2.7)
+          while abs(posAtual[1]) - abs(posPast[1]) <= TAM_GRID_Y:
+              motor_esquerdo.on(15)
+              motor_direito.on(15)
+              
+          motor_esquerdo.off()
+          motor_direito.off()
+          
           time.sleep(300/1000)
           
       if direcao[0] != 0:
