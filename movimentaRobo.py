@@ -152,7 +152,7 @@ def Movimento_Robo(caminho,TAM_GRID_X,TAM_GRID_Y):
             # Corrige posição
             if abs(angle + 90) > 3 and direcao[0]:
                 print("angle (dir) =", angle)
-                controle_direct.on_for_degrees(steering = -(angle+90) , speed=2, degrees=180)
+                controle_direct.on_for_degrees(steering = (angle+90) , speed=-2, degrees=180)
                 time.sleep(300/1000)
             
             posAtual = getPosition()
