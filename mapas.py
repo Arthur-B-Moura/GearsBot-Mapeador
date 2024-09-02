@@ -66,7 +66,7 @@ class Mapa:
 
         return str
     
-    def atualiza(self, mapa_opc, map_type: str) -> None:
+    def atualiza(self, mapa_opc, map_type: str, pos_robo) -> None:
         new_m = Mapa() # Inicializa mapa resultante
         
         # Tamanhos cardinais do mapa resultante
@@ -82,10 +82,6 @@ class Mapa:
         # Obtem coordenadas do centro (posição inicial do robô) para o novo mapa
         new_m.center[POS_X] = new_m.tam[POS_OESTE]
         new_m.center[POS_Y] = new_m.tam[POS_NORTE]
-
-        # new_m.center[POS_X] = size_x - new_m.tam[POS_LESTE] - 1
-        # new_m.center[POS_Y] = size_y - new_m.tam[POS_NORTE] - 1 # TODO: double check this line later
-
 
         # Diferenças de tamanho entre as matrizes 
         # Diferenças de tamanho da matriz self entre a matriz resultante
@@ -104,55 +100,58 @@ class Mapa:
                 i_opc = i - (new_m.tam[POS_NORTE]-mapa_opc.tam[POS_NORTE]) 
                 j_opc = j - (new_m.tam[POS_OESTE]-mapa_opc.tam[POS_OESTE])
                 
-                if i_opc in range(mapa_opc.tam[POS_SUL]+mapa_opc.tam[POS_NORTE]) and j_opc in range(mapa_opc.tam[POS_OESTE]+mapa_opc.tam[POS_LESTE]): 
+                if i_opc in range(mapa_opc.tam[POS_SUL]+mapa_opc.tam[POS_NORTE]+1) and j_opc in range(mapa_opc.tam[POS_OESTE]+mapa_opc.tam[POS_LESTE]+1): 
                    val = 1 if (map_type == "hit" and mapa_opc.matriz[i_opc][j_opc] == 1) or (map_type == "miss" and mapa_opc.matriz[i_opc][j_opc] == 0) else 0
                 else: val = 0
                 
                 i_old = i - (new_m.tam[POS_NORTE]-self.tam[POS_NORTE]) 
                 j_old = j - (new_m.tam[POS_OESTE]-self.tam[POS_OESTE]) 
 
-                # print("d_tam =", d_tam)
 
-                # print(f"i_old = {i_old}")
-                # print(f"j_old = {j_old}")
-
-                if i_old in range(self.tam[POS_SUL]+self.tam[POS_NORTE]) and j_old in range(self.tam[POS_OESTE]+self.tam[POS_LESTE]): 
-                    # print(f"i_old = {i_old}")
-                    # print(f"j_old = {j_old}")
-
+                if i_old in range(self.tam[POS_SUL]+self.tam[POS_NORTE]+1) and j_old in range(self.tam[POS_OESTE]+self.tam[POS_LESTE]+1): 
                     new_m.matriz[i][j] = self.matriz[i_old][j_old] + val 
-
-                else: new_m.matriz[i][j] = val 
+                    if self.matriz[i_old][j_old] == 0 and map_type == "unknown": new_m.matriz[i][j] = 0
+                    if self.matriz[i_old][j_old] == 1 and map_type == "unknown": new_m.matriz[i][j] = 1
+                else: 
+                    if map_type != "unknown": new_m.matriz[i][j] = val 
+                
+                # Atualização de posições para mapa de espaços desconhecidos
+                if map_type == "unknown":
+                    if i_opc in range(mapa_opc.tam[POS_SUL]+mapa_opc.tam[POS_NORTE]+1) and j_opc in range(mapa_opc.tam[POS_OESTE]+mapa_opc.tam[POS_LESTE]+1): 
+                        if mapa_opc.matriz[i_opc][j_opc] == 8: new_m.matriz[i][j] = 1
+                        
+                        if i_old in range(self.tam[POS_SUL]+self.tam[POS_NORTE]+1) and j_old in range(self.tam[POS_OESTE]+self.tam[POS_LESTE]+1): 
+                            if self.matriz[i_old][j_old] == 0 and map_type == "unknown": new_m.matriz[i][j] = 0
+                
+                        if mapa_opc.matriz[i_opc][j_opc] != 8: new_m.matriz[i][j] = 0
+            
+        # Atualiza marcação no ponto em que o robô está atualmente
+        num = 0 if map_type == "hit" or map_type == "unknown" else 1
+        new_m.matriz[new_m.center[POS_Y]+pos_robo[POS_Y]][new_m.center[POS_X]-pos_robo[POS_X]] = num
                 
         
         # Atualiza valores da matriz inicial
         self.matriz = new_m.matriz
         self.center = new_m.center
         self.tam    = new_m.tam
+    
+    
+    def Mapa_Final(self, mapa_hit, mapa_miss, mapa_desc):
+        self.tam = mapa_hit.tam
+        self.center = mapa_hit.center
+        
+        # Marca tamanhos x e y da matriz do mapa resultante
+        size_x = int(self.tam[POS_LESTE]+self.tam[POS_OESTE]) + 1
+        size_y = int(self.tam[POS_NORTE]+self.tam[POS_SUL])   + 1
 
-
-# m1 = Mapa()
-# m2 = Mapa()
-
-# #             0 1 2 3 4 5 6 7 8 9
-# m1.matriz = [[1,1,1,1,0,0,0,1,0,8,8,8], # 0
-#              [1,1,1,1,0,0,0,1,0,8,8,8], # 1 
-#              [1,1,1,1,0,0,0,1,0,8,8,8], # 2
-#              [1,1,1,1,2,0,0,1,0,8,8,8], # 3
-#              [1,1,1,1,0,0,0,1,0,8,8,8], # 4
-#              [1,1,1,1,0,0,0,1,0,8,8,8], # 5
-#              [1,1,1,1,0,0,0,1,0,8,8,8], # 6
-#              [1,1,1,1,0,0,0,1,0,8,8,8], # 7
-#              [1,1,1,1,0,0,0,1,0,8,8,8], # 8
-#              [1,1,1,1,0,0,0,1,0,8,8,8]] # 9
-
-# m1.center = [4,3]
-# m1.tam    = [3,6,7,4]
-
-# print("m1 =")
-# print(m1)
-
-# m2.atualiza(m1, "hit")
-
-# print("m2 =")
-# print(m2)
+        self.matriz = [[0 for _ in range(size_x)] for _ in range(size_y)]
+        
+        for i in range(size_y):
+            for j in range(size_x):
+                if mapa_hit.matriz[i][j] != 0 or mapa_miss.matriz[i][j] != 0:
+                    self.matriz[i][j] = round((mapa_hit.matriz[i][j]/(mapa_hit.matriz[i][j]+mapa_miss.matriz[i][j]))+0.18)
+                else:
+                    self.matriz[i][j] = 0
+                
+                if mapa_desc.matriz[i][j] == 1:
+                    self.matriz[i][j] = 1
