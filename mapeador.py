@@ -4,8 +4,11 @@
 import time
 import math
 
-from mapas   import Mapa
-from caminho import Movimento_Robo
+# Arquivos que devem ser carregados ao gearsbot
+# o nome dos módulos, dentro do simulador, deve ser alterado de "module1.py" e "module2.py" para
+# os nomes de arquivos utilizados abaixo, ou seja, "mapas.py" e "caminho.py"
+from mapas   import Mapa            # mapas = mapas.py
+from caminho import Movimento_Robo  # caminho = movimentaRobo.py
 
 from ev3dev2.motor import *       # MoveTank(), MoveSteering(), LargeMotor()
 from ev3dev2.sensor.lego import * # GyroSensor(), LaserRangeSensor(), GPSSensor()
